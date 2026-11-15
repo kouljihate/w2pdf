@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.7.0 — 2026-11-16
+
+- Process the export like WhatsApp does: translate text, embed photos, grab a video frame, skip Facebook links
+
 ## 1.6.2 — 2026-11-15
 
 - Keep the PDF when a translation fails and show the result in a dedicated panel

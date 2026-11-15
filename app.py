@@ -26,6 +26,7 @@ from w2pdf.pdf_builder import (
     build_pdf,
     order_blocks,
 )
+from w2pdf.media import extract_video_frame
 from w2pdf.translate import TranslationError, contains_arabic, translate_arabic_to_french
 from w2pdf.whatsapp import chat_items
 
@@ -58,8 +59,8 @@ st.markdown(
     <div class="w2p-hero">
       <div class="kicker">WhatsApp → PDF<span class="w2p-badge">v{__version__}</span></div>
       <h1>Turn an exported chat into one clean PDF</h1>
-      <p>Upload the .zip you exported from WhatsApp, pick a date range, then tick the photos and messages
-      that belong in the document.</p>
+      <p>Upload the .zip you exported from WhatsApp, pick a date range, then tick the photos, videos and
+      messages that belong in the document.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -167,6 +168,7 @@ upload = st.file_uploader(
 )
 
 export_blocks: list[ImageBlock | TextBlock] = []
+archive = None
 
 if upload is None:
     st.info(
@@ -174,7 +176,6 @@ if upload is None:
         "`.zip` above. The archive is read in memory — nothing is written to disk."
     )
 else:
-    archive = None
     try:
         archive = load_chat_archive(upload.getvalue())
     except ArchiveError as exc:
@@ -218,10 +219,10 @@ else:
                 f"{len(selected_messages)} of {len(archive.messages)} messages between "
                 f"{start_day:%d/%m/%Y} and {end_day:%d/%m/%Y}"
                 + (f" · {outside} outside the range" if outside else "")
-                + f" · {len(archive.images)} photo(s) in the archive"
+                + f" · {len(archive.images)} photo(s) · {len(archive.videos)} video(s) in the archive"
             )
 
-        rows = chat_items(selected_messages, archive.images)
+        rows = chat_items(selected_messages, archive.images, archive.videos)
         if not rows:
             st.warning("No messages in the selected range.")
         else:
@@ -265,7 +266,17 @@ else:
                     continue
                 source_row = rows[index]
                 sequence = sequence_of(row.seq, source_row["seq"])
-                if source_row["media"]:
+                if source_row["type"] == "Video":
+                    export_blocks.append(
+                        ImageBlock(
+                            name=source_row["media"],
+                            data=b"",
+                            caption=source_row["caption"],
+                            sequence=sequence,
+                            kind="video",
+                        )
+                    )
+                elif source_row["media"]:
                     export_blocks.append(
                         ImageBlock(
                             name=source_row["media"],
@@ -284,10 +295,19 @@ else:
                         )
                     )
 
-            photos = sum(1 for block in export_blocks if isinstance(block, ImageBlock))
+            photos = sum(
+                1
+                for block in export_blocks
+                if isinstance(block, ImageBlock) and block.kind == "photo"
+            )
+            videos = sum(
+                1
+                for block in export_blocks
+                if isinstance(block, ImageBlock) and block.kind == "video"
+            )
             st.caption(
-                f"{len(export_blocks)} item(s) selected · {photos} photo(s) paired from the "
-                "archive. Untick anything you do not want in the PDF."
+                f"{len(export_blocks)} item(s) selected · {photos} photo(s) · {videos} video(s) "
+                "paired from the archive. Untick anything you do not want in the PDF."
             )
 
 # ---------------------------------------------------------------------------
@@ -295,8 +315,13 @@ else:
 # ---------------------------------------------------------------------------
 st.subheader("2 · Build the PDF")
 
-photo_total = sum(1 for block in export_blocks if isinstance(block, ImageBlock))
-text_total = len(export_blocks) - photo_total
+photo_total = sum(
+    1 for block in export_blocks if isinstance(block, ImageBlock) and block.kind == "photo"
+)
+video_total = sum(
+    1 for block in export_blocks if isinstance(block, ImageBlock) and block.kind == "video"
+)
+text_total = len(export_blocks) - photo_total - video_total
 arabic_blocks = [
     block.text
     for block in export_blocks
@@ -305,6 +330,7 @@ arabic_blocks = [
 
 st.caption(
     f"{photo_total} photo{'s' if photo_total != 1 else ''} · "
+    f"{video_total} video{'s' if video_total != 1 else ''} · "
     f"{text_total} text block{'s' if text_total != 1 else ''} · "
     f"{len(arabic_blocks)} to translate"
 )
@@ -315,15 +341,17 @@ if export_blocks:
         preview_rows = []
         for block in preview_blocks:
             if isinstance(block, ImageBlock):
-                content = f"Photo · {block.name}"
+                label = "Video" if block.kind == "video" else "Photo"
+                content = f"{label} · {block.name}"
                 if block.caption:
                     content += f" — {block.caption}"
             else:
+                label = "Text"
                 content = "Text · " + " ".join(block.text.split())[:90]
             preview_rows.append(
                 {
                     "order": f"{block.sequence:g}",
-                    "type": "Photo" if isinstance(block, ImageBlock) else "Text",
+                    "type": label,
                     "content": content,
                 }
             )
@@ -356,6 +384,24 @@ if build_clicked:
                         f"{len(translation_errors)} of {len(unique_arabic)} block(s) could not be "
                         "translated; the original text is kept for those."
                     )
+
+            pending_videos = [
+                block
+                for block in export_blocks
+                if isinstance(block, ImageBlock) and block.kind == "video" and not block.data
+            ]
+            if pending_videos:
+                st.write(f"Extracting a still frame from {len(pending_videos)} video(s)…")
+                frame_progress = st.progress(0.0)
+                for index, block in enumerate(pending_videos, start=1):
+                    payload = archive.video_for(block.name) if archive else None
+                    frame = extract_video_frame(payload) if payload else None
+                    if frame:
+                        block.data = frame
+                    else:
+                        print(f"[w2pdf] no frame for {block.name}", flush=True)
+                    frame_progress.progress(index / len(pending_videos))
+                frame_progress.empty()
 
             st.write("Laying out the document…")
             for block in export_blocks:

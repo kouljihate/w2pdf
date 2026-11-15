@@ -48,12 +48,13 @@ class PdfExportError(RuntimeError):
 
 @dataclass(slots=True)
 class ImageBlock:
-    """An image to place in the document."""
+    """An image to place in the document (a photo, or a frame taken from a video)."""
 
     name: str
     data: bytes
     caption: str = ""
     sequence: float = 0.0
+    kind: str = "photo"
 
 
 @dataclass(slots=True)

@@ -15,9 +15,13 @@ from dataclasses import dataclass, field
 from .whatsapp import ChatMessage, decode_export, parse_chat
 
 IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"})
+VIDEO_EXTENSIONS = frozenset({".mp4", ".3gp", ".mov", ".webm", ".mkv", ".avi", ".m4v"})
 
 MAX_ARCHIVE_BYTES = 400 * 1024 * 1024
 MAX_IMAGE_BYTES = 30 * 1024 * 1024
+# Videos are held only until their frame is extracted at build time.
+MAX_VIDEO_FILE_BYTES = 60 * 1024 * 1024
+MAX_VIDEO_TOTAL_BYTES = 200 * 1024 * 1024
 
 
 class ArchiveError(RuntimeError):
@@ -30,6 +34,7 @@ class ChatExport:
 
     messages: list[ChatMessage] = field(default_factory=list)
     images: dict[str, bytes] = field(default_factory=dict)
+    videos: dict[str, bytes] = field(default_factory=dict)
     chat_name: str = ""
 
     def image_for(self, reference: str | None) -> bytes | None:
@@ -38,6 +43,13 @@ class ChatExport:
             return None
         key = os.path.basename(reference.replace("\\", "/")).lower()
         return self.images.get(key)
+
+    def video_for(self, reference: str | None) -> bytes | None:
+        """Return the video bytes referenced by a chat line, if the archive has it."""
+        if not reference:
+            return None
+        key = os.path.basename(reference.replace("\\", "/")).lower()
+        return self.videos.get(key)
 
 
 def _is_unsafe(name: str) -> bool:
@@ -70,6 +82,7 @@ def load_chat_archive(data: bytes) -> ChatExport:
 
     text_names: list[str] = []
     image_names: list[str] = []
+    video_names: list[str] = []
     with archive:
         infos = [info for info in archive.infolist() if not info.is_dir()]
         for info in infos:
@@ -77,11 +90,15 @@ def load_chat_archive(data: bytes) -> ChatExport:
                 continue
             base = os.path.basename(info.filename.replace("\\", "/"))
             lower = base.lower()
+            extension = os.path.splitext(lower)[1]
             if lower.endswith(".txt"):
                 text_names.append(info.filename)
-            elif os.path.splitext(lower)[1] in IMAGE_EXTENSIONS:
+            elif extension in IMAGE_EXTENSIONS:
                 if info.file_size <= MAX_IMAGE_BYTES:
                     image_names.append(info.filename)
+            elif extension in VIDEO_EXTENSIONS:
+                if info.file_size <= MAX_VIDEO_FILE_BYTES:
+                    video_names.append(info.filename)
 
         if not text_names:
             raise ArchiveError(
@@ -106,6 +123,20 @@ def load_chat_archive(data: bytes) -> ChatExport:
             base = os.path.basename(name.replace("\\", "/"))
             images.setdefault(base.lower(), payload)
 
+        videos: dict[str, bytes] = {}
+        video_total = 0
+        for name in video_names:
+            info = archive.getinfo(name)
+            video_total += info.file_size
+            if video_total > MAX_VIDEO_TOTAL_BYTES:
+                break
+            try:
+                payload = archive.read(name)
+            except Exception:
+                continue
+            base = os.path.basename(name.replace("\\", "/"))
+            videos.setdefault(base.lower(), payload)
+
     messages = parse_chat(decode_export(raw))
     chat_name = os.path.splitext(os.path.basename(chat_log.replace("\\", "/")))[0]
-    return ChatExport(messages=messages, images=images, chat_name=chat_name)
+    return ChatExport(messages=messages, images=images, videos=videos, chat_name=chat_name)

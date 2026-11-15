@@ -29,6 +29,12 @@ _FILE_ATTACHED_RE = re.compile(
     r"^(?P<name>[^\n]+?\.(?P<ext>[A-Za-z0-9]{2,5}))\s*\(file attached\)", re.IGNORECASE
 )
 
+# Facebook links are dropped from the document entirely.
+_FACEBOOK_RE = re.compile(
+    r"(?:https?://)?(?:[a-z0-9-]+\.)*(?:facebook\.com|fb\.watch|fb\.me|fb\.com)\S*",
+    re.IGNORECASE,
+)
+
 # Lines WhatsApp itself inserts; not worth putting in a document.
 _SYSTEM_HINTS = (
     "omitted",
@@ -142,24 +148,36 @@ def parse_chat(raw: str) -> list[ChatMessage]:
     return messages
 
 
-def chat_items(messages: list[ChatMessage], images: dict[str, bytes] | None = None) -> list[dict]:
-    """Map messages to sequential document items, pairing photos from the archive.
+def strip_facebook_links(text: str) -> str:
+    """Remove Facebook links; a message that was only a link ends up empty."""
+    return re.sub(r"\s{2,}", " ", _FACEBOOK_RE.sub(" ", text or "")).strip()
 
-    Numbers run in chat order, so every photo keeps the place of the message that
-    sent it and the texts that follow stay attached to it.
+
+def chat_items(
+    messages: list[ChatMessage],
+    images: dict[str, bytes] | None = None,
+    videos: dict[str, bytes] | None = None,
+) -> list[dict]:
+    """Map messages to sequential document items.
+
+    Photos are embedded as they are, videos are flagged so a still frame can be
+    taken at build time, plain text is translated later, and Facebook links are
+    dropped. Numbers run in chat order, so every item keeps its place.
     """
     images = images or {}
+    videos = videos or {}
     items: list[dict] = []
-    sequence = 0
+
     for message in messages:
-        sequence += 1
         reference = (message.media or "").strip()
         key = os.path.basename(reference.replace("\\", "/")).lower() if reference else ""
-        payload = images.get(key) if key else None
-        if payload is not None:
+        caption = strip_facebook_links(message.text or "")
+        sequence = len(items) + 1
+
+        if key and key in images:
             content = reference
-            if message.text:
-                content += f" — {message.text}"
+            if caption:
+                content += f" — {caption}"
             items.append(
                 {
                     "include": True,
@@ -169,16 +187,36 @@ def chat_items(messages: list[ChatMessage], images: dict[str, bytes] | None = No
                     "date": message.time_label,
                     "content": content,
                     "media": reference,
-                    "caption": message.text,
+                    "caption": caption,
                     "text": "",
-                    "data": payload,
+                    "data": images[key],
                 }
             )
             continue
 
-        text = message.text or (f"Attachment: {reference}" if reference else "")
-        if not text.strip():
+        if key and key in videos:
+            content = reference
+            if caption:
+                content += f" — {caption}"
+            items.append(
+                {
+                    "include": True,
+                    "seq": sequence,
+                    "type": "Video",
+                    "sender": message.sender,
+                    "date": message.time_label,
+                    "content": content,
+                    "media": reference,
+                    "caption": caption,
+                    "text": "",
+                    "data": b"",
+                }
+            )
             continue
+
+        text = caption or (f"Attachment: {reference}" if reference else "")
+        if not text.strip():
+            continue  # Facebook link, or nothing left to print
         items.append(
             {
                 "include": True,
