@@ -2,6 +2,14 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.5.0 — 2026-11-15
+
+- Every generated PDF is also written to the **output folder** (`output/` on the host,
+  `/app/output` in the container, override with `W2PDF_OUTPUT_DIR`), not just offered
+  as a download.
+- The app reports the saved path and lists the most recent files in that folder.
+- Docker Compose mounts `./output` so documents appear directly on your machine.
+
 ## 1.4.0 — 2026-11-15
 
 - The app is now ZIP-first: upload the WhatsApp export, pick a date range, then tick

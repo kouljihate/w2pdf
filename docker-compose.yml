@@ -5,6 +5,9 @@ services:
     container_name: w2pdf
     ports:
       - "8501:8501"
+    # Generated PDFs are written here and show up in ./output on the host.
+    volumes:
+      - ./output:/app/output
     restart: unless-stopped
     environment:
       STREAMLIT_SERVER_MAX_UPLOAD_SIZE: "80"

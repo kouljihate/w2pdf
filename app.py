@@ -6,8 +6,10 @@ range, tick the messages and photos that belong in the PDF, and download it.
 
 from __future__ import annotations
 
+import os
 import re
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -81,6 +83,20 @@ def sequence_of(value, fallback: int) -> float:
 def safe_filename(title: str) -> str:
     stem = re.sub(r"[^A-Za-z0-9._-]+", "-", (title or "").strip()).strip("-")
     return f"w2pdf-{stem or 'whatsapp-export'}-{datetime.now():%Y%m%d-%H%M}.pdf"
+
+
+OUTPUT_DIR = Path(os.environ.get("W2PDF_OUTPUT_DIR", "output"))
+
+
+def save_pdf_to_output(payload: bytes, filename: str) -> tuple[Path | None, str]:
+    """Write the generated PDF into the output folder; report why when it fails."""
+    try:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        target = OUTPUT_DIR / filename
+        target.write_bytes(payload)
+        return target, ""
+    except OSError as exc:
+        return None, str(exc)
 
 
 # ---------------------------------------------------------------------------
@@ -351,15 +367,27 @@ if build_clicked:
                 st.error(str(exc))
                 st.stop()
 
+            filename = safe_filename(title)
+            saved_path, save_error = save_pdf_to_output(pdf_bytes, filename)
             st.session_state["pdf"] = pdf_bytes
-            st.session_state["pdf_name"] = safe_filename(title)
+            st.session_state["pdf_name"] = filename
+            st.session_state["pdf_path"] = str(saved_path) if saved_path else ""
+            st.session_state["pdf_save_error"] = save_error
             st.session_state["translations"] = translations
             status.update(label="PDF ready", state="complete", expanded=False)
 
 pdf = st.session_state.get("pdf")
 if pdf:
     size_kb = len(pdf) / 1024
-    st.success(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB")
+    saved_path = st.session_state.get("pdf_path")
+    if saved_path:
+        st.success(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB · saved to {saved_path}")
+    else:
+        st.success(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB")
+        st.warning(
+            "The PDF could not be written to the output folder, so use the download button: "
+            + (st.session_state.get("pdf_save_error") or "unknown error")
+        )
     st.download_button(
         "Download PDF",
         data=pdf,
@@ -368,6 +396,30 @@ if pdf:
         type="primary",
         width="stretch",
     )
+    saved_files = sorted(
+        (path for path in OUTPUT_DIR.glob("*.pdf") if path.is_file()),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )[:8] if OUTPUT_DIR.is_dir() else []
+    if saved_files:
+        with st.expander(f"Output folder · {len(saved_files)} recent file(s)"):
+            st.caption(f"{OUTPUT_DIR.resolve()}")
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "file": path.name,
+                            "size (KB)": round(path.stat().st_size / 1024),
+                            "created": datetime.fromtimestamp(path.stat().st_mtime).strftime(
+                                "%d/%m/%Y %H:%M"
+                            ),
+                        }
+                        for path in saved_files
+                    ]
+                ),
+                hide_index=True,
+            )
+
     last_translations = st.session_state.get("translations") or {}
     if last_translations:
         with st.expander(f"Translations ({len(last_translations)})"):

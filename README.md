@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.4.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.5.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -22,6 +22,9 @@ PDF, with an Arabic → French translation module.
   The PDF can contain the original only, the French only, or both side by side.
 - **PDF options**: title, page size (A4/Letter/Legal), portrait or landscape,
   margins, sender/date labels and page numbers.
+- **Output folder**: every generated PDF is written to `output/` (`/app/output` in the
+  container, mounted to `./output` by Compose) as well as offered for download;
+  override the location with `W2PDF_OUTPUT_DIR`.
 - Arabic is shaped with `arabic-reshaper` + `python-bidi` and drawn with an
   embedded Arabic font (VIP Rawy, Amiri fallback), so right-to-left lines render correctly.
 
@@ -37,8 +40,11 @@ Without compose:
 
 ```bash
 docker build -t w2pdf:local .
-docker run --rm -p 8501:8501 w2pdf:local
+docker run --rm -p 8501:8501 -v "$PWD/output:/app/output" w2pdf:local
 ```
+
+Without the volume the container still writes to `/app/output` inside itself, so mount
+the folder to keep the PDFs on your machine.
 
 The image installs `fonts-hosny-amiri` and `fonts-noto-core` so Arabic text
 renders inside the PDF.
@@ -95,6 +101,7 @@ w2pdf/translate.py      Arabic → French translation
 w2pdf/fonts.py          Arabic font discovery
 Dockerfile              python:3.12-slim image with Arabic fonts
 docker-compose.yml      one-command startup on port 8501
+output/                 generated PDFs (mounted to /app/output by Compose)
 static/fonts/           Comfortaa (Latin) and VIP Rawy (Arabic)
 static/theme/           Bootstrap 5 design layer
 static/css/             app-specific styles

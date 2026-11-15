@@ -5,6 +5,7 @@ venv/
 .env
 .streamlit/secrets.toml
 *.pdf
+output/
 .pytest_cache/
 screenshot-*.png
 
