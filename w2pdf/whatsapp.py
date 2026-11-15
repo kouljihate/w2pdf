@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -19,6 +20,14 @@ _LINE_RE = re.compile(
 )
 
 _DATE_FORMATS = ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M", "%d/%m/%y %H:%M:%S", "%d/%m/%y %H:%M")
+
+# Attachment references inside exports that include media:
+#   iOS      <attached: 00000042-PHOTO-2024-03-12-21-04-11.jpg>
+#   Android  IMG-20240315-WA0001.jpg (file attached)
+_ATTACHED_RE = re.compile(r"<attached:\s*(?P<name>[^>]+)>", re.IGNORECASE)
+_FILE_ATTACHED_RE = re.compile(
+    r"^(?P<name>[^\n]+?\.(?P<ext>[A-Za-z0-9]{2,5}))\s*\(file attached\)", re.IGNORECASE
+)
 
 # Lines WhatsApp itself inserts; not worth putting in a document.
 _SYSTEM_HINTS = (
@@ -48,6 +57,7 @@ class ChatMessage:
     sender: str
     text: str
     timestamp: datetime | None = None
+    media: str | None = None
 
     @property
     def time_label(self) -> str:
@@ -74,6 +84,17 @@ def _clean(line: str) -> str:
 def _is_system(text: str) -> bool:
     lowered = text.lower()
     return not lowered.strip() or any(hint in lowered for hint in _SYSTEM_HINTS)
+
+
+def _extract_attachment(body: str) -> tuple[str | None, str]:
+    """Split an attachment reference from the caption that follows it."""
+    match = _ATTACHED_RE.search(body)
+    if match:
+        return match.group("name").strip(), body.replace(match.group(0), "").strip()
+    match = _FILE_ATTACHED_RE.match(body)
+    if match:
+        return match.group("name").strip(), body[match.end() :].strip()
+    return None, body.strip()
 
 
 def _parse_timestamp(date: str, time: str) -> datetime | None:
@@ -110,10 +131,69 @@ def parse_chat(raw: str) -> list[ChatMessage]:
                     timestamp=_parse_timestamp(match.group("date"), match.group("time")),
                 )
             )
-        elif messages and line.strip():
+        elif messages and line.strip() and not _is_system(line):
             # A wrapped continuation of the previous message.
             messages[-1].text = f"{messages[-1].text}\n{line.strip()}".strip()
+
+    for message in messages:
+        media, caption = _extract_attachment(message.text)
+        message.media = media
+        message.text = caption
     return messages
+
+
+def chat_items(messages: list[ChatMessage], images: dict[str, bytes] | None = None) -> list[dict]:
+    """Map messages to sequential document items, pairing photos from the archive.
+
+    Numbers run in chat order, so every photo keeps the place of the message that
+    sent it and the texts that follow stay attached to it.
+    """
+    images = images or {}
+    items: list[dict] = []
+    sequence = 0
+    for message in messages:
+        sequence += 1
+        reference = (message.media or "").strip()
+        key = os.path.basename(reference.replace("\\", "/")).lower() if reference else ""
+        payload = images.get(key) if key else None
+        if payload is not None:
+            content = reference
+            if message.text:
+                content += f" — {message.text}"
+            items.append(
+                {
+                    "include": True,
+                    "seq": sequence,
+                    "type": "Photo",
+                    "sender": message.sender,
+                    "date": message.time_label,
+                    "content": content,
+                    "media": reference,
+                    "caption": message.text,
+                    "text": "",
+                    "data": payload,
+                }
+            )
+            continue
+
+        text = message.text or (f"Attachment: {reference}" if reference else "")
+        if not text.strip():
+            continue
+        items.append(
+            {
+                "include": True,
+                "seq": sequence,
+                "type": "Text",
+                "sender": message.sender,
+                "date": message.time_label,
+                "content": " ".join(text.split())[:120],
+                "media": "",
+                "caption": "",
+                "text": text,
+                "data": b"",
+            }
+        )
+    return items
 
 
 def split_paragraphs(raw: str) -> list[str]:

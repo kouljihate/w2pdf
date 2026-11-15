@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.1.1-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.2.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -13,9 +13,11 @@ PDF, with an Arabic → French translation module.
 - **Images**: upload the photos WhatsApp exported (`.jpg`, `.png`, `.webp`, `.bmp`),
   tick the ones you want, add an optional caption and choose 1 or 2 images per page.
   Files are ordered by name (WhatsApp names them chronologically) or by upload order.
-- **Texts**: upload a WhatsApp chat export (`.txt`, "Export chat → Without media")
-  and tick the messages you want, or simply paste text. Blank-line separated text
-  is treated as separate blocks.
+- **Chat export**: upload the `.zip` WhatsApp produces with **With all media** (or
+  **With selected media**): the archive is read in memory, its `_chat.txt` parsed and
+  each photo paired with the message that sent it. A date range narrows the export;
+  the remaining items are numbered sequentially. A `.txt` export (without media) and
+  pasted text are supported too.
 - **Sequence**: every object carries a `Seq` number that decides its place in the
   PDF. Photos default to 1, 3, 5 … and texts to 2, 4, 6 …, so each photo is followed
   by its own texts; change the numbers to regroup or reorder anything. The merged
@@ -73,7 +75,8 @@ Arabic text rather than printing empty boxes.
 ```
 app.py                  Streamlit UI
 w2pdf/pdf_builder.py    ReportLab layout: images, wrapped RTL text, footer
-w2pdf/whatsapp.py       WhatsApp chat export parser
+w2pdf/whatsapp.py       WhatsApp chat export parser (media references, sequential items)
+w2pdf/archive.py        Reads the .zip export: chat log plus photos, no disk writes
 w2pdf/translate.py      Arabic → French translation
 w2pdf/fonts.py          Arabic font discovery
 Dockerfile              python:3.12-slim image with Arabic fonts

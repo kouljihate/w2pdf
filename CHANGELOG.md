@@ -2,6 +2,16 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.2.0 — 2026-11-15
+
+- Upload a WhatsApp chat export **.zip** (with media) directly: the archive is read
+  in memory, its `_chat.txt` parsed and each photo paired with the message that
+  sent it.
+- Date-range filter for exports; items are re-numbered sequentially after filtering.
+- Chat exports produce one sequential table (Include · Seq · Type · Date · Sender ·
+  Content) so photos and texts are selected together.
+- Attachments missing from the archive fall back to an `Attachment: <name>` line.
+
 ## 1.1.1 — 2026-11-15
 
 - Version number shown as a badge in the app header and in the README.
