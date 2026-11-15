@@ -1,0 +1,10 @@
+services:
+  w2pdf:
+    build: .
+    image: w2pdf:latest
+    container_name: w2pdf
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    environment:
+      STREAMLIT_SERVER_MAX_UPLOAD_SIZE: "80"
