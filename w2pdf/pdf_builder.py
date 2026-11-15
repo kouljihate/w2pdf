@@ -126,6 +126,9 @@ class _Document:
             width, height = height, width
         self.page_size = (width, height)
         self.arabic_font = arabic_font
+        self.arabic_bold = fonts.arabic_bold() or arabic_font
+        self.latin = fonts.latin_font()
+        self.latin_bold = fonts.latin_bold()
 
         self.canvas = canvas.Canvas(buffer, pagesize=self.page_size, pageCompression=1)
         self.canvas.setTitle(options.title or "WhatsApp export")
@@ -176,9 +179,9 @@ class _Document:
             c.setFont(self.arabic_font, 8)
             c.drawString(self.left, footer_y, _display(label))
         else:
-            c.setFont("Helvetica", 8)
-            c.drawString(self.left, footer_y, self._clip(label, "Helvetica", 8, self.width * 0.7))
-        c.setFont("Helvetica", 8)
+            c.setFont(self.latin, 8)
+            c.drawString(self.left, footer_y, self._clip(label, self.latin, 8, self.width * 0.7))
+        c.setFont(self.latin, 8)
         c.drawRightString(self.right, footer_y, f"Page {self.page_no}")
         c.restoreState()
 
@@ -192,9 +195,9 @@ class _Document:
         if pdfmetrics.stringWidth(text, font, size) <= max_width:
             return text
         clipped = text
-        while clipped and pdfmetrics.stringWidth(clipped + "…", font, size) > max_width:
+        while clipped and pdfmetrics.stringWidth(clipped + "...", font, size) > max_width:
             clipped = clipped[:-1]
-        return clipped + "…"
+        return clipped + "..."
 
     @staticmethod
     def _width(text: str, font: str, size: float) -> float:
@@ -242,7 +245,7 @@ class _Document:
         if not title:
             return
         size = 21
-        font = self.arabic_font if has_arabic(title) and self.arabic_font else "Helvetica-Bold"
+        font = self.arabic_bold if has_arabic(title) and self.arabic_bold else self.latin_bold
         direction_rtl = has_arabic(title)
         for line in self._wrap(title, font, size, self.width):
             self._advance(size * 1.2)
@@ -275,9 +278,9 @@ class _Document:
                 continue
             line_is_arabic = has_arabic(raw_line)
             if line_is_arabic and self.arabic_font:
-                font = self.arabic_font
+                font = (self.arabic_bold or self.arabic_font) if bold else self.arabic_font
             else:
-                font = "Helvetica-Bold" if bold else "Helvetica"
+                font = self.latin_bold if bold else self.latin
             for piece in self._wrap(raw_line, font, size, self.width):
                 line_height = size * line_gap
                 self._ensure(line_height)
@@ -303,7 +306,7 @@ class _Document:
             parts.append(block.text)
 
         if show_metadata:
-            meta = " · ".join(p for p in (block.sender, block.timestamp) if p)
+            meta = " | ".join(p for p in (block.sender, block.timestamp) if p)
             if meta:
                 self.draw_text(meta, size=8, color=MUTED, bold=True, line_gap=1.5)
 
@@ -326,7 +329,7 @@ class _Document:
         caption_height = 0.0
         caption = block.caption.strip()
         caption_font = (
-            self.arabic_font if has_arabic(caption) and self.arabic_font else "Helvetica"
+            self.arabic_font if has_arabic(caption) and self.arabic_font else self.latin
         )
         if caption:
             caption_lines = self._wrap(caption, caption_font, 9, self.width * 0.9)
@@ -384,7 +387,8 @@ def build_pdf(
     if needs_arabic and arabic_font is None:
         raise PdfExportError(
             "No Arabic-capable font is installed, so the Arabic text cannot be rendered. "
-            "Run the app through the Docker image (it installs Amiri and Noto Naskh Arabic)."
+            "The image ships VIP Rawy in static/fonts; install fonts-hosny-amiri or "
+            "fonts-noto-core when running outside Docker."
         )
 
     buffer = io.BytesIO()

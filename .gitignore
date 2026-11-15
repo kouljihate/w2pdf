@@ -6,6 +6,12 @@ venv/
 .streamlit/secrets.toml
 *.pdf
 .pytest_cache/
+screenshot-*.png
+
+# Comfortaa ships under the SIL OFL (see static/fonts/OFL-Comfortaa.txt).
+# VIP Rawy has no published license, so it is not redistributed here: drop
+# VIP-Rawy-Regular.ttf / VIP-Rawy-Bold.ttf into static/fonts for local builds.
+static/fonts/VIP-Rawy-*.ttf
 .freebuff/
 .DS_Store
 Thumbs.db

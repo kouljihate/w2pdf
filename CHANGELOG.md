@@ -2,6 +2,15 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.3.0 — 2026-11-15
+
+- Bootstrap-flavoured theme layer (`static/theme/bootstrap-w2pdf.css`) built on
+  Bootstrap 5 tokens and applied to Streamlit components.
+- Duo-language typography: **Comfortaa** for Latin/French and **VIP Rawy** for
+  Arabic, in the UI and in the generated PDF (Amiri/Noto remain as fallbacks).
+- Local fonts served through Streamlit static serving, so the theme works offline.
+- App-specific styles moved to `static/css/app.css`.
+
 ## 1.2.0 — 2026-11-15
 
 - Upload a WhatsApp chat export **.zip** (with media) directly: the archive is read

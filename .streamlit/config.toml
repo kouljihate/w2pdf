@@ -3,6 +3,8 @@ headless = true
 maxUploadSize = 80
 enableXsrfProtection = true
 fileWatcherType = "none"
+# Serves ./static at /app/static so the theme can load the local font files.
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false

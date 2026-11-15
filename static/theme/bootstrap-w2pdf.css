@@ -1,0 +1,294 @@
+/*
+ * W2PDF theme — a free Bootstrap 5 design layer (variables + component styles)
+ * applied on top of Streamlit, so the app reads like a Bootstrap page without
+ * pulling in Bootstrap's reset, which would break Streamlit's own layout.
+ *
+ * Duo-language typography:
+ *   Comfortaa      → Latin UI and PDF text (sans, rounded, three weights)
+ *   VIP Rawy       → Arabic text (Comfortaa has no Arabic glyphs, so the browser
+ *                    and ReportLab fall back to this family per glyph)
+ */
+
+@font-face {
+  font-family: "Comfortaa";
+  src: url("/app/static/fonts/Comfortaa-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Comfortaa";
+  src: url("/app/static/fonts/Comfortaa-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Comfortaa";
+  src: url("/app/static/fonts/Comfortaa-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "VIP Rawy";
+  src: url("/app/static/fonts/VIP-Rawy-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "VIP Rawy";
+  src: url("/app/static/fonts/VIP-Rawy-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Bootstrap 5 tokens, retuned around the WhatsApp palette. */
+  --bs-primary: #128c7e;
+  --bs-primary-rgb: 18, 140, 126;
+  --bs-primary-dark: #0b6b60;
+  --bs-body-font-family: "Comfortaa", "VIP Rawy", "Segoe UI", system-ui, sans-serif;
+  --bs-body-font-size: 0.95rem;
+  --bs-body-color: #212529;
+  --bs-body-secondary: #6c757d;
+  --bs-body-bg: #f4f7f6;
+  --bs-surface: #ffffff;
+  --bs-border: #dee2e6;
+  --bs-border-strong: #ced4da;
+  --bs-border-radius: 0.5rem;
+  --bs-border-radius-sm: 0.375rem;
+  --bs-border-radius-pill: 50rem;
+  --bs-focus-ring: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.22);
+  --bs-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --bs-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --bs-spacer: 1rem;
+}
+
+/* ---------------------------------------------------------------- typography */
+.stApp,
+.stApp h1,
+.stApp h2,
+.stApp h3,
+.stApp h4,
+.stApp h5,
+.stApp h6,
+.stApp p,
+.stApp label,
+.stApp button,
+.stApp input,
+.stApp textarea,
+.stApp select,
+.stApp li,
+.stApp [data-testid="stMarkdownContainer"],
+.stApp [data-testid="stWidgetLabel"] {
+  font-family: var(--bs-body-font-family);
+}
+
+.stApp h1 { font-weight: 700; letter-spacing: -0.01em; }
+.stApp h2 { font-weight: 700; }
+.stApp h3 { font-weight: 700; font-size: 1.15rem; }
+
+.stApp [data-testid="stMarkdownContainer"] p,
+.stApp [data-testid="stWidgetLabel"] p {
+  color: var(--bs-body-color);
+}
+
+.stApp [data-testid="stCaptionContainer"],
+.stApp [data-testid="stCaptionContainer"] p {
+  color: var(--bs-body-secondary);
+  font-size: 0.82rem;
+}
+
+/* ------------------------------------------------------------------- layout */
+.stApp {
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: var(--bs-body-font-size);
+}
+
+.stApp [data-testid="stHeader"] { background: transparent; }
+
+.block-container {
+  padding-top: 1.6rem;
+  max-width: 1180px;
+}
+
+[data-testid="stSidebar"] {
+  background: var(--bs-surface);
+  border-right: 1px solid var(--bs-border);
+}
+
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+  color: var(--bs-body-color);
+}
+
+/* ------------------------------------------------------------------ buttons */
+.stApp .stButton > button,
+.stApp .stDownloadButton > button,
+.stApp [data-testid="stBaseButton-secondary"],
+.stApp [data-testid="stBaseButton-primary"] {
+  border-radius: var(--bs-border-radius);
+  border: 1px solid var(--bs-border-strong);
+  background: var(--bs-surface);
+  color: var(--bs-body-color);
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.5rem 1rem;
+  box-shadow: var(--bs-shadow-sm);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.05s ease;
+}
+
+.stApp .stButton > button:hover,
+.stApp .stDownloadButton > button:hover,
+.stApp [data-testid="stBaseButton-secondary"]:hover {
+  border-color: var(--bs-border-strong);
+  background: #f1f3f5;
+  box-shadow: var(--bs-shadow);
+}
+
+.stApp [data-testid="stBaseButton-primary"],
+.stApp .stButton > button[kind="primary"],
+.stApp .stDownloadButton > button[kind="primary"] {
+  background: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: #ffffff;
+}
+
+.stApp [data-testid="stBaseButton-primary"]:hover,
+.stApp .stButton > button[kind="primary"]:hover,
+.stApp .stDownloadButton > button[kind="primary"]:hover {
+  background: var(--bs-primary-dark);
+  border-color: var(--bs-primary-dark);
+  color: #ffffff;
+}
+
+.stApp button:focus-visible,
+.stApp input:focus-visible,
+.stApp textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--bs-focus-ring);
+}
+
+/* ------------------------------------------------------------- form controls */
+.stApp [data-testid="stTextInput"] input,
+.stApp [data-testid="stNumberInput"] input,
+.stApp [data-testid="stTextArea"] textarea,
+.stApp [data-testid="stDateInput"] input,
+.stApp [data-baseweb="select"] > div {
+  border-radius: var(--bs-border-radius);
+  border: 1px solid var(--bs-border-strong);
+  background: var(--bs-surface);
+  color: var(--bs-body-color);
+  font-size: 0.92rem;
+  box-shadow: none;
+}
+
+.stApp [data-testid="stTextInput"] input:focus,
+.stApp [data-testid="stNumberInput"] input:focus,
+.stApp [data-testid="stTextArea"] textarea:focus,
+.stApp [data-testid="stDateInput"] input:focus,
+.stApp [data-baseweb="select"] > div:focus-within {
+  border-color: var(--bs-primary);
+  box-shadow: var(--bs-focus-ring);
+}
+
+.stApp [data-baseweb="select"] svg { color: var(--bs-body-secondary); }
+
+/* ------------------------------------------------------------- file uploader */
+.stApp [data-testid="stFileUploaderDropzone"] {
+  border: 1.5px dashed var(--bs-border-strong);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-surface);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  padding: 1.1rem;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"]:hover {
+  border-color: var(--bs-primary);
+  background: rgba(var(--bs-primary-rgb), 0.04);
+}
+
+/* -------------------------------------------------------- tables and editors */
+.stApp [data-testid="stDataFrame"],
+.stApp [data-testid="stDataEditor"],
+.stApp [data-testid="stTable"] {
+  border: 1px solid var(--bs-border);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-surface);
+  box-shadow: var(--bs-shadow-sm);
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------- expanders */
+.stApp [data-testid="stExpander"] {
+  border: 1px solid var(--bs-border);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-surface);
+  box-shadow: var(--bs-shadow-sm);
+}
+
+.stApp [data-testid="stExpander"] summary {
+  font-weight: 600;
+  border-radius: var(--bs-border-radius);
+}
+
+.stApp [data-testid="stExpander"] summary:hover {
+  background: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+/* ------------------------------------------------------------------ alerts */
+.stApp [data-testid="stAlert"] {
+  border-radius: var(--bs-border-radius);
+  border: 1px solid transparent;
+  box-shadow: var(--bs-shadow-sm);
+  font-size: 0.9rem;
+}
+
+.stApp [data-testid="stAlert"][kind="info"],
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentInfo"]) {
+  background: #e8f4f2;
+  border-color: #bfe3dd;
+  color: #0b4f47;
+}
+
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentSuccess"]) {
+  background: #d1e7dd;
+  border-color: #badbcc;
+  color: #0f5132;
+}
+
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) {
+  background: #fff3cd;
+  border-color: #ffecb5;
+  color: #664d03;
+}
+
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentError"]) {
+  background: #f8d7da;
+  border-color: #f5c2c7;
+  color: #842029;
+}
+
+/* ---------------------------------------------------------- status and forms */
+.stApp [data-testid="stStatusWidget"],
+.stApp [data-testid="stForm"] {
+  border-radius: var(--bs-border-radius);
+}
+
+.stApp [data-testid="stProgress"] > div > div > div {
+  background: var(--bs-primary);
+}
+
+/* ------------------------------------------------------------------ dividers */
+.stApp hr {
+  border-color: var(--bs-border);
+  opacity: 1;
+}

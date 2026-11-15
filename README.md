@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.2.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.3.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -60,6 +60,24 @@ Outside Docker the app looks for an Arabic font on the system (Amiri or Noto
 Naskh on Linux, Tahoma on Windows, Geeza Pro on macOS). Without one it refuses
 Arabic text rather than printing empty boxes.
 
+## Theming and fonts
+
+- `static/theme/bootstrap-w2pdf.css` is a **free Bootstrap 5 design layer**: Bootstrap's
+  colour, radius, spacing, shadow and component tokens (buttons, inputs, alerts,
+  expanders, tables, uploader) applied to Streamlit's markup. Bootstrap's reset is
+  deliberately not loaded — it would fight Streamlit's own layout.
+- `static/css/app.css` holds app-specific pieces (hero, version badge).
+- Typography is duo-language: **Comfortaa** (Light/Regular/Bold) for Latin and French,
+  **VIP Rawy** (Regular/Bold) for Arabic. The CSS font stack falls back per glyph, and
+  the PDF registers both faces with ReportLab (Amiri/Noto remain system fallbacks).
+- Fonts are loaded from `static/fonts` through Streamlit's static serving
+  (`server.enableStaticServing`, URL prefix `/app/static/`), so nothing is fetched online.
+- Comfortaa ships in this repo under the SIL Open Font License
+  (`static/fonts/OFL-Comfortaa.txt`). **VIP Rawy has no published license, so its
+  binaries are not redistributed here** — copy `VIP-Rawy-Regular.ttf` and
+  `VIP-Rawy-Bold.ttf` into `static/fonts/` for local builds (Arabic then falls back to
+  Amiri/Noto when they are absent).
+
 ## Translation notes
 
 - Uses `deep-translator`'s keyless free backends: MyMemory first, Google as a
@@ -81,4 +99,7 @@ w2pdf/translate.py      Arabic → French translation
 w2pdf/fonts.py          Arabic font discovery
 Dockerfile              python:3.12-slim image with Arabic fonts
 docker-compose.yml      one-command startup on port 8501
+static/fonts/           Comfortaa (Latin) and VIP Rawy (Arabic)
+static/theme/           Bootstrap 5 design layer
+static/css/             app-specific styles
 ```

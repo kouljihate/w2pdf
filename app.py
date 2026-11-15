@@ -33,40 +33,23 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(
-    """
-    <style>
-      .block-container {padding-top: 1.6rem; max-width: 1180px;}
-      .w2p-hero {
-        border-radius: 16px;
-        padding: 22px 26px;
-        background: linear-gradient(120deg, #075E54 0%, #128C7E 55%, #25D366 100%);
-        color: #ffffff;
-        margin-bottom: 18px;
-      }
-      .w2p-hero h1 {margin: 6px 0 6px; font-size: 1.75rem; line-height: 1.2; color: #fff;}
-      .w2p-hero p {margin: 0; opacity: .9;}
-      .w2p-hero .kicker {
-        text-transform: uppercase; letter-spacing: .12em;
-        font-size: .72rem; font-weight: 700; opacity: .85;
-      }
-      .w2p-badge {
-        display: inline-block;
-        margin-left: 8px;
-        padding: 2px 9px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, .22);
-        border: 1px solid rgba(255, 255, 255, .4);
-        font-size: .68rem;
-        font-weight: 700;
-        letter-spacing: .04em;
-        vertical-align: 1px;
-      }
-      div[data-testid="stFileUploaderDropzone"] {border-radius: 12px;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+STYLE_FILES = ("static/theme/bootstrap-w2pdf.css", "static/css/app.css")
+
+
+@st.cache_data(show_spinner=False)
+def load_styles(*paths: str) -> str:
+    """Inline the theme and app stylesheets so they always apply."""
+    sheets = []
+    for path in paths:
+        try:
+            with open(path, encoding="utf-8") as handle:
+                sheets.append(handle.read())
+        except OSError:
+            continue
+    return "\n".join(sheets)
+
+
+st.markdown(f"<style>{load_styles(*STYLE_FILES)}</style>", unsafe_allow_html=True)
 st.markdown(
     f"""
     <div class="w2p-hero">
@@ -139,8 +122,8 @@ with st.sidebar:
 
     if not fonts.arabic_font_available():
         st.warning(
-            "No Arabic-capable font found. Arabic text will be refused; run the Docker "
-            "image, which installs Amiri and Noto Naskh Arabic."
+            "No Arabic-capable font found. Arabic text will be refused; the image ships "
+            "VIP Rawy in static/fonts, and Amiri/Noto are used as system fallbacks."
         )
 
     st.divider()

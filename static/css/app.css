@@ -1,0 +1,45 @@
+/* App-specific styling on top of the Bootstrap theme layer. */
+
+.w2p-hero {
+  border-radius: 1rem;
+  padding: 22px 26px;
+  background: linear-gradient(120deg, #075e54 0%, #128c7e 55%, #25d366 100%);
+  color: #ffffff;
+  margin-bottom: 18px;
+  box-shadow: 0 6px 18px rgba(7, 94, 84, 0.18);
+}
+
+.w2p-hero h1 {
+  margin: 6px 0 6px;
+  font-size: 1.75rem;
+  line-height: 1.25;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.w2p-hero p {
+  margin: 0;
+  opacity: 0.92;
+  font-size: 0.92rem;
+}
+
+.w2p-hero .kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.w2p-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 50rem;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+}
