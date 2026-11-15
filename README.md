@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.5.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.6.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -22,9 +22,11 @@ PDF, with an Arabic → French translation module.
   The PDF can contain the original only, the French only, or both side by side.
 - **PDF options**: title, page size (A4/Letter/Legal), portrait or landscape,
   margins, sender/date labels and page numbers.
-- **Output folder**: every generated PDF is written to `output/` (`/app/output` in the
-  container, mounted to `./output` by Compose) as well as offered for download;
-  override the location with `W2PDF_OUTPUT_DIR`.
+- **Download or keep**: the finished PDF is always offered as **Download PDF locally**,
+  and a copy is written to `output/` (`/app/output` in the container, mounted to
+  `./output` by Compose) unless you untick "Save a copy to the output folder". Earlier
+  files in that folder can be downloaded again from the app. Override the location with
+  `W2PDF_OUTPUT_DIR`.
 - Arabic is shaped with `arabic-reshaper` + `python-bidi` and drawn with an
   embedded Arabic font (VIP Rawy, Amiri fallback), so right-to-left lines render correctly.
 

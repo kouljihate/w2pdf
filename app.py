@@ -134,6 +134,11 @@ with st.sidebar:
     st.header("Extras")
     show_metadata = st.checkbox("Show sender and date", value=True)
     page_numbers = st.checkbox("Page numbers", value=True)
+    save_copies = st.checkbox(
+        "Save a copy to the output folder",
+        value=True,
+        help="Keeps the PDF in output/ on the host. Turn it off to only download it.",
+    )
 
     if not fonts.arabic_font_available():
         st.warning(
@@ -368,7 +373,10 @@ if build_clicked:
                 st.stop()
 
             filename = safe_filename(title)
-            saved_path, save_error = save_pdf_to_output(pdf_bytes, filename)
+            if save_copies:
+                saved_path, save_error = save_pdf_to_output(pdf_bytes, filename)
+            else:
+                saved_path, save_error = None, ""
             st.session_state["pdf"] = pdf_bytes
             st.session_state["pdf_name"] = filename
             st.session_state["pdf_path"] = str(saved_path) if saved_path else ""
@@ -384,17 +392,19 @@ if pdf:
         st.success(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB · saved to {saved_path}")
     else:
         st.success(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB")
-        st.warning(
-            "The PDF could not be written to the output folder, so use the download button: "
-            + (st.session_state.get("pdf_save_error") or "unknown error")
-        )
+        if st.session_state.get("pdf_save_error"):
+            st.warning(
+                "The PDF could not be written to the output folder, so download it here: "
+                + st.session_state["pdf_save_error"]
+            )
     st.download_button(
-        "Download PDF",
+        "Download PDF locally",
         data=pdf,
         file_name=st.session_state["pdf_name"],
         mime="application/pdf",
         type="primary",
         width="stretch",
+        help="Save the PDF to your computer through the browser.",
     )
     saved_files = sorted(
         (path for path in OUTPUT_DIR.glob("*.pdf") if path.is_file()),
@@ -403,22 +413,23 @@ if pdf:
     )[:8] if OUTPUT_DIR.is_dir() else []
     if saved_files:
         with st.expander(f"Output folder · {len(saved_files)} recent file(s)"):
-            st.caption(f"{OUTPUT_DIR.resolve()}")
-            st.dataframe(
-                pd.DataFrame(
-                    [
-                        {
-                            "file": path.name,
-                            "size (KB)": round(path.stat().st_size / 1024),
-                            "created": datetime.fromtimestamp(path.stat().st_mtime).strftime(
-                                "%d/%m/%Y %H:%M"
-                            ),
-                        }
-                        for path in saved_files
-                    ]
-                ),
-                hide_index=True,
-            )
+            st.caption(f"{OUTPUT_DIR.resolve()} — download any of them again:")
+            for path in saved_files:
+                file_col, size_col, action_col = st.columns([0.62, 0.18, 0.2])
+                file_col.markdown(f"**{path.name}**")
+                size_col.caption(
+                    f"{path.stat().st_size / 1024:.0f} KB · "
+                    f"{datetime.fromtimestamp(path.stat().st_mtime):%d/%m/%Y %H:%M}"
+                )
+                with action_col:
+                    st.download_button(
+                        "Download",
+                        data=path.read_bytes(),
+                        file_name=path.name,
+                        mime="application/pdf",
+                        key=f"download-{path.name}",
+                        width="stretch",
+                    )
 
     last_translations = st.session_state.get("translations") or {}
     if last_translations:

@@ -2,6 +2,12 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.6.0 — 2026-11-15
+
+- The finished PDF can always be **downloaded locally** ("Download PDF locally").
+- Saving a copy to the output folder is now optional ("Save a copy to the output folder").
+- Files already in the output folder can be downloaded again from the app.
+
 ## 1.5.0 — 2026-11-15
 
 - Every generated PDF is also written to the **output folder** (`output/` on the host,
