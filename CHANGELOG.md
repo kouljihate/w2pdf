@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.6.2 — 2026-11-15
+
+- Keep the PDF when a translation fails and show the result in a dedicated panel
+
 ## 1.6.1 — 2026-11-15
 
 - Bump the version on every change with a single release helper

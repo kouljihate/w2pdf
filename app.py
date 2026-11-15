@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import re
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -333,22 +334,28 @@ build_clicked = st.button("Build PDF", type="primary", width="stretch")
 if build_clicked:
     if not export_blocks:
         st.warning("Upload an export and select at least one photo or text block.")
+        print("[w2pdf] build clicked with nothing selected", flush=True)
     else:
         translations: dict[str, str] = {}
+        translation_errors: list[tuple[str, str]] = []
         unique_arabic = sorted({text for text in arabic_blocks})
         with st.status("Building the PDF…", expanded=True) as status:
             if translation_mode != "none" and unique_arabic:
                 st.write(f"Translating {len(unique_arabic)} Arabic block(s) to French…")
                 progress = st.progress(0.0)
-                try:
-                    for index, text in enumerate(unique_arabic, start=1):
+                for index, text in enumerate(unique_arabic, start=1):
+                    try:
                         translations[text] = translate_one(text)
-                        progress.progress(index / len(unique_arabic))
-                except TranslationError as exc:
-                    status.update(label="Translation failed", state="error")
-                    st.error(str(exc))
-                    st.stop()
+                    except TranslationError as exc:
+                        # Keep the original wording instead of losing the whole document.
+                        translation_errors.append((text, str(exc)))
+                    progress.progress(index / len(unique_arabic))
                 progress.empty()
+                if translation_errors:
+                    st.warning(
+                        f"{len(translation_errors)} of {len(unique_arabic)} block(s) could not be "
+                        "translated; the original text is kept for those."
+                    )
 
             st.write("Laying out the document…")
             for block in export_blocks:
@@ -368,8 +375,15 @@ if build_clicked:
             try:
                 pdf_bytes = build_pdf(export_blocks, options)
             except PdfExportError as exc:
+                print(f"[w2pdf] build rejected: {exc}", flush=True)
                 status.update(label="Could not build the PDF", state="error")
                 st.error(str(exc))
+                st.stop()
+            except Exception as exc:  # unexpected: keep the reason in the server log
+                traceback.print_exc()
+                print(f"[w2pdf] build failed: {exc!r}", flush=True)
+                status.update(label="Could not build the PDF", state="error")
+                st.error(f"Unexpected error while building the PDF: {exc}")
                 st.stop()
 
             filename = safe_filename(title)
@@ -382,30 +396,54 @@ if build_clicked:
             st.session_state["pdf_path"] = str(saved_path) if saved_path else ""
             st.session_state["pdf_save_error"] = save_error
             st.session_state["translations"] = translations
+            st.session_state["translation_errors"] = translation_errors
+            print(
+                f"[w2pdf] built {filename}: {len(pdf_bytes)} bytes, "
+                f"{len(export_blocks)} items, {len(translation_errors)} untranslated, "
+                f"saved={saved_path or 'no'}",
+                flush=True,
+            )
             status.update(label="PDF ready", state="complete", expanded=False)
+            st.toast("PDF ready", icon="✅")
 
 pdf = st.session_state.get("pdf")
 if pdf:
     size_kb = len(pdf) / 1024
     saved_path = st.session_state.get("pdf_path")
-    if saved_path:
-        st.success(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB · saved to {saved_path}")
-    else:
-        st.success(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB")
-        if st.session_state.get("pdf_save_error"):
+    with st.container(border=True):
+        st.markdown("### Your PDF is ready")
+        st.caption(f"{st.session_state['pdf_name']} · {size_kb:.0f} KB")
+        if saved_path:
+            st.caption(f"Saved copy: `{saved_path}` (the output folder mounted from your project).")
+        elif st.session_state.get("pdf_save_error"):
             st.warning(
-                "The PDF could not be written to the output folder, so download it here: "
+                "Could not write to the output folder, use the button below: "
                 + st.session_state["pdf_save_error"]
             )
-    st.download_button(
-        "Download PDF locally",
-        data=pdf,
-        file_name=st.session_state["pdf_name"],
-        mime="application/pdf",
-        type="primary",
-        width="stretch",
-        help="Save the PDF to your computer through the browser.",
-    )
+        else:
+            st.caption("Saving a copy is turned off, so use the button below.")
+        st.download_button(
+            "Download PDF locally",
+            data=pdf,
+            file_name=st.session_state["pdf_name"],
+            mime="application/pdf",
+            type="primary",
+            width="stretch",
+            help="Save the PDF to your computer through the browser.",
+        )
+
+    failed_translations = st.session_state.get("translation_errors") or []
+    if failed_translations:
+        with st.expander(f"Untranslated blocks ({len(failed_translations)})"):
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {"Arabic": text, "reason": reason}
+                        for text, reason in failed_translations
+                    ]
+                ),
+                hide_index=True,
+            )
     saved_files = sorted(
         (path for path in OUTPUT_DIR.glob("*.pdf") if path.is_file()),
         key=lambda path: path.stat().st_mtime,

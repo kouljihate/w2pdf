@@ -42,7 +42,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4).status == 200 else 1)"
 
 # Keep the label last so a version bump only rebuilds this metadata layer.
-ARG APP_VERSION=1.6.1
+ARG APP_VERSION=1.6.2
 LABEL org.opencontainers.image.title="W2PDF" \
       org.opencontainers.image.description="WhatsApp images and texts to PDF with Arabic to French translation" \
       org.opencontainers.image.version="${APP_VERSION}" \
