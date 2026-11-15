@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.6.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.6.1-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -82,6 +82,24 @@ Arabic text rather than printing empty boxes.
   `VIP-Rawy-Bold.ttf` into `static/fonts/` for local builds (Arabic then falls back to
   Amiri/Noto when they are absent).
 
+## Versioning
+
+Every change bumps the version, following [Semantic Versioning](CHANGELOG.md):
+
+- **patch** — fixes, copy and styling tweaks
+- **minor** — new behaviour or UI
+- **major** — breaking changes
+
+One command keeps `w2pdf/__init__.py`, the Dockerfile label, the README badge and the
+changelog in step:
+
+```bash
+python scripts/bump_version.py patch "Short description of the change"
+```
+
+It prints the matching `git commit` / `git tag vX.Y.Z` / `git push` line; releases are
+tagged on `main` and the running container reports its version in the header badge.
+
 ## Translation notes
 
 - Uses `deep-translator`'s keyless free backends: MyMemory first, Google as a
@@ -104,6 +122,7 @@ w2pdf/fonts.py          Arabic font discovery
 Dockerfile              python:3.12-slim image with Arabic fonts
 docker-compose.yml      one-command startup on port 8501
 output/                 generated PDFs (mounted to /app/output by Compose)
+scripts/bump_version.py release helper: version, Dockerfile label, README badge, changelog
 static/fonts/           Comfortaa (Latin) and VIP Rawy (Arabic)
 static/theme/           Bootstrap 5 design layer
 static/css/             app-specific styles

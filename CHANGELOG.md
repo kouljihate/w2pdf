@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.6.1 — 2026-11-15
+
+- Bump the version on every change with a single release helper
+
 ## 1.6.0 — 2026-11-15
 
 - The finished PDF can always be **downloaded locally** ("Download PDF locally").
