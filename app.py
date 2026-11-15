@@ -1,7 +1,7 @@
 """W2PDF — Streamlit front end.
 
-Select WhatsApp images and chat messages, optionally translate Arabic text to
-French, and download a single PDF.
+Upload a WhatsApp chat export (.zip, including media), narrow it with a date
+range, tick the messages and photos that belong in the PDF, and download it.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from w2pdf.pdf_builder import (
     order_blocks,
 )
 from w2pdf.translate import TranslationError, contains_arabic, translate_arabic_to_french
-from w2pdf.whatsapp import chat_items, decode_export, parse_chat, split_paragraphs
+from w2pdf.whatsapp import chat_items
 
 st.set_page_config(
     page_title="W2PDF · WhatsApp to PDF",
@@ -54,14 +54,13 @@ st.markdown(
     f"""
     <div class="w2p-hero">
       <div class="kicker">WhatsApp → PDF<span class="w2p-badge">v{__version__}</span></div>
-      <h1>Turn selected chats and photos into one clean PDF</h1>
-      <p>Tick the images and messages you want, translate Arabic to French, then download the document.</p>
+      <h1>Turn an exported chat into one clean PDF</h1>
+      <p>Upload the .zip you exported from WhatsApp, pick a date range, then tick the photos and messages
+      that belong in the document.</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
-
-IMAGE_TYPES = ["jpg", "jpeg", "png", "webp", "bmp"]
 
 
 @st.cache_data(show_spinner=False, ttl=24 * 3600)
@@ -100,7 +99,7 @@ with st.sidebar:
     translate_on = st.toggle(
         "Arabic → French",
         value=True,
-        help="Every selected text block containing Arabic is translated and added to the PDF.",
+        help="Every selected message containing Arabic is translated and added to the PDF.",
     )
     mode_label = st.selectbox(
         "Text in the PDF",
@@ -130,140 +129,40 @@ with st.sidebar:
     st.caption(f"W2PDF v{__version__}")
 
 # ---------------------------------------------------------------------------
-# 1 — images
+# 1 — the WhatsApp export
 # ---------------------------------------------------------------------------
-st.subheader("1 · Images")
-uploads = st.file_uploader(
-    "Drop WhatsApp images here",
-    type=IMAGE_TYPES,
-    accept_multiple_files=True,
-    help="JPG, PNG, WEBP or BMP. Photos exported by WhatsApp keep their capture date in the file name.",
-)
+st.subheader("1 · WhatsApp export")
 
-image_blocks: list[ImageBlock] = []
-if uploads:
-    order = st.radio(
-        "Order",
-        ["File name (oldest first)", "Upload order"],
-        horizontal=True,
-        disabled=len(uploads) < 2,
-    )
-    files = (
-        sorted(uploads, key=lambda f: f.name.lower())
-        if order.startswith("File name")
-        else list(uploads)
-    )
-    by_name = {f.name: f.getvalue() for f in files}
-
-    signature = abs(hash(tuple((f.name, f.size) for f in files)))
-    frame = pd.DataFrame(
-        [
-            {"include": True, "seq": 2 * index + 1, "image": f.name, "caption": ""}
-            for index, f in enumerate(files)
-        ]
-    )
-    edited = st.data_editor(
-        frame,
-        key=f"images-{signature}",
-        hide_index=True,
-        column_config={
-            "include": st.column_config.CheckboxColumn("Include", width="small", default=True),
-            "seq": st.column_config.NumberColumn(
-                "Seq",
-                width="small",
-                step=1,
-                help="Document position. Photos default to 1, 3, 5 … so their texts fit between them.",
-            ),
-            "image": st.column_config.TextColumn("Image", disabled=True, width="large"),
-            "caption": st.column_config.TextColumn("Caption (optional)", width="medium"),
-        },
-    )
-    image_blocks = [
-        ImageBlock(
-            name=row.image,
-            data=by_name[row.image],
-            caption=str(row.caption or "").strip(),
-            sequence=sequence_of(row.seq, 2 * index + 1),
-        )
-        for index, row in enumerate(edited.itertuples())
-        if row.include
-    ]
-    st.caption(
-        "Seq sets the document order. Number a photo 1 and the texts that belong to it 2 "
-        "to keep them together; repeat for the next photo."
-    )
-
-    with st.expander(f"Preview ({len(files)} image{'s' if len(files) != 1 else ''})"):
-        preview = files[:12]
-        for start in range(0, len(preview), 6):
-            columns = st.columns(6)
-            for column, upload in zip(columns, preview[start : start + 6]):
-                with column:
-                    st.image(upload.getvalue(), caption=upload.name, width="stretch")
-        if len(files) > 12:
-            st.caption(f"Showing the first 12 of {len(files)} images.")
-
-# ---------------------------------------------------------------------------
-# 2 — texts
-# ---------------------------------------------------------------------------
-st.subheader("2 · WhatsApp texts")
-source = st.radio(
-    "Where does the text come from?",
-    ["WhatsApp export (.zip)", "WhatsApp export (.txt)", "Paste text"],
-    horizontal=True,
+upload = st.file_uploader(
+    "Chat export (.zip, with media)",
+    type=["zip"],
+    key="chat-export",
+    help=(
+        "On your phone: open the chat → tap the contact or group name → Export chat → "
+        "With all media (or With selected media). Upload the .zip unchanged; the chat log "
+        "and its photos are read inside it."
+    ),
 )
 
 export_blocks: list[ImageBlock | TextBlock] = []
-text_rows: list[dict] = []
 
-if source == "Paste text":
-    pasted = st.text_area(
-        "Arabic or French text",
-        height=220,
-        placeholder="الصق النص العربي هنا…  (or paste any text)",
+if upload is None:
+    st.info(
+        "Export the chat from WhatsApp (**Export chat → With all media**), then drop the "
+        "`.zip` above. The archive is read in memory — nothing is written to disk."
     )
-    per_paragraph = st.checkbox("One block per blank line", value=True)
-    blocks = split_paragraphs(pasted) if per_paragraph else ([pasted.strip()] if pasted.strip() else [])
-    text_rows = [
-        {"text": block, "sender": "", "date": "", "seq": 2 * (index + 1)}
-        for index, block in enumerate(blocks)
-    ]
-    if text_rows:
-        st.caption(
-            f"{len(text_rows)} text block{'s' if len(text_rows) != 1 else ''}, numbered "
-            "2, 4, 6 … so they slot in after each photo."
-        )
 else:
-    is_zip = source.endswith("(.zip)")
-    upload = st.file_uploader(
-        "WhatsApp export",
-        type=["zip"] if is_zip else ["txt"],
-        key="chat-export",
-        help=(
-            "WhatsApp → open the chat → ⋮ or contact name → Export chat → With all media "
-            "(or With selected media). Upload the .zip unchanged; photos are read inside it."
-            if is_zip
-            else "WhatsApp → more options → Export chat → Without media."
-        ),
-    )
+    archive = None
+    try:
+        archive = load_chat_archive(upload.getvalue())
+    except ArchiveError as exc:
+        st.error(str(exc))
 
-    messages = []
-    images: dict[str, bytes] = {}
-    if upload is not None:
-        try:
-            if is_zip:
-                archive = load_chat_archive(upload.getvalue())
-                messages = archive.messages
-                images = archive.images
-            else:
-                messages = parse_chat(decode_export(upload.getvalue()))
-        except ArchiveError as exc:
-            st.error(str(exc))
-        if not messages:
-            st.warning("No messages could be read from that file.")
+    if archive is not None and not archive.messages:
+        st.warning("No messages could be read from the chat log inside that archive.")
 
-    if messages:
-        dated = [message.timestamp for message in messages if message.timestamp]
+    if archive is not None and archive.messages:
+        dated = [message.timestamp for message in archive.messages if message.timestamp]
         if dated:
             first_day, last_day = min(dated).date(), max(dated).date()
             window = st.date_input(
@@ -284,24 +183,23 @@ else:
             start_day = end_day = None
 
         if start_day is None or end_day is None:
-            selected_messages = messages
-            st.caption(f"{len(messages)} messages · no dates found, so no date filter.")
+            selected_messages = archive.messages
+            st.caption(f"{len(archive.messages)} messages · no dates found, so no date filter.")
         else:
             selected_messages = [
                 message
-                for message in messages
-                if message.timestamp is None
-                or start_day <= message.timestamp.date() <= end_day
+                for message in archive.messages
+                if message.timestamp is None or start_day <= message.timestamp.date() <= end_day
             ]
-            outside = len(messages) - len(selected_messages)
+            outside = len(archive.messages) - len(selected_messages)
             st.caption(
-                f"{len(selected_messages)} of {len(messages)} messages between "
+                f"{len(selected_messages)} of {len(archive.messages)} messages between "
                 f"{start_day:%d/%m/%Y} and {end_day:%d/%m/%Y}"
                 + (f" · {outside} outside the range" if outside else "")
-                + (f" · {len(images)} images in the archive" if images else "")
+                + f" · {len(archive.images)} photo(s) in the archive"
             )
 
-        rows = chat_items(selected_messages, images)
+        rows = chat_items(selected_messages, archive.images)
         if not rows:
             st.warning("No messages in the selected range.")
         else:
@@ -371,34 +269,15 @@ else:
             )
 
 # ---------------------------------------------------------------------------
-# 3 — build
+# 2 — build
 # ---------------------------------------------------------------------------
-st.subheader("3 · Build the PDF")
+st.subheader("2 · Build the PDF")
 
-paste_blocks = [
-    TextBlock(
-        text=row["text"],
-        sender=row["sender"],
-        timestamp=row["date"],
-        sequence=row["seq"],
-    )
-    for row in text_rows
-]
-if export_blocks:
-    document_blocks: list[ImageBlock | TextBlock] = list(export_blocks)
-    if image_blocks or text_rows:
-        st.info(
-            "The chat export supplies both photos and texts, so the separate images and "
-            "pasted text are left out of this document."
-        )
-else:
-    document_blocks = list(image_blocks) + paste_blocks
-
-photo_total = sum(1 for block in document_blocks if isinstance(block, ImageBlock))
-text_total = len(document_blocks) - photo_total
+photo_total = sum(1 for block in export_blocks if isinstance(block, ImageBlock))
+text_total = len(export_blocks) - photo_total
 arabic_blocks = [
     block.text
-    for block in document_blocks
+    for block in export_blocks
     if isinstance(block, TextBlock) and contains_arabic(block.text)
 ]
 
@@ -408,8 +287,8 @@ st.caption(
     f"{len(arabic_blocks)} to translate"
 )
 
-if document_blocks:
-    preview_blocks = order_blocks(document_blocks)
+if export_blocks:
+    preview_blocks = order_blocks(export_blocks)
     with st.expander(f"Document order · {len(preview_blocks)} item(s)", expanded=False):
         preview_rows = []
         for block in preview_blocks:
@@ -431,8 +310,8 @@ if document_blocks:
 build_clicked = st.button("Build PDF", type="primary", width="stretch")
 
 if build_clicked:
-    if not document_blocks:
-        st.warning("Select at least one photo or one text block.")
+    if not export_blocks:
+        st.warning("Upload an export and select at least one photo or text block.")
     else:
         translations: dict[str, str] = {}
         unique_arabic = sorted({text for text in arabic_blocks})
@@ -451,9 +330,10 @@ if build_clicked:
                 progress.empty()
 
             st.write("Laying out the document…")
-            for block in document_blocks:
+            for block in export_blocks:
                 if isinstance(block, TextBlock):
                     block.translation = translations.get(block.text, "")
+
             options = PdfOptions(
                 page_size=page_size,
                 landscape=orientation == "Landscape",
@@ -465,7 +345,7 @@ if build_clicked:
                 page_numbers=page_numbers,
             )
             try:
-                pdf_bytes = build_pdf(document_blocks, options)
+                pdf_bytes = build_pdf(export_blocks, options)
             except PdfExportError as exc:
                 status.update(label="Could not build the PDF", state="error")
                 st.error(str(exc))
@@ -493,7 +373,10 @@ if pdf:
         with st.expander(f"Translations ({len(last_translations)})"):
             st.dataframe(
                 pd.DataFrame(
-                    [{"Arabic": source_text, "French": french} for source_text, french in last_translations.items()]
+                    [
+                        {"Arabic": source_text, "French": french}
+                        for source_text, french in last_translations.items()
+                    ]
                 ),
                 hide_index=True,
             )

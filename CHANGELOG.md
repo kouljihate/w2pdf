@@ -2,6 +2,13 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.4.0 — 2026-11-15
+
+- The app is now ZIP-first: upload the WhatsApp export, pick a date range, then tick
+  photos and messages in one table. The separate image uploader, the `.txt` source and
+  pasted text were removed from the UI to make that flow the only path.
+- Item selection shows the date range summary and the number of photos found.
+
 ## 1.3.0 — 2026-11-15
 
 - Bootstrap-flavoured theme layer (`static/theme/bootstrap-w2pdf.css`) built on

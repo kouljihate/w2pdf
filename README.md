@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.3.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.4.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -10,24 +10,20 @@ PDF, with an Arabic → French translation module.
 
 ## What it does
 
-- **Images**: upload the photos WhatsApp exported (`.jpg`, `.png`, `.webp`, `.bmp`),
-  tick the ones you want, add an optional caption and choose 1 or 2 images per page.
-  Files are ordered by name (WhatsApp names them chronologically) or by upload order.
-- **Chat export**: upload the `.zip` WhatsApp produces with **With all media** (or
-  **With selected media**): the archive is read in memory, its `_chat.txt` parsed and
-  each photo paired with the message that sent it. A date range narrows the export;
-  the remaining items are numbered sequentially. A `.txt` export (without media) and
-  pasted text are supported too.
-- **Sequence**: every object carries a `Seq` number that decides its place in the
-  PDF. Photos default to 1, 3, 5 … and texts to 2, 4, 6 …, so each photo is followed
-  by its own texts; change the numbers to regroup or reorder anything. The merged
-  order is previewed before building.
+- **One upload**: drop the `.zip` WhatsApp produces with **With all media** (or
+  **With selected media**). The archive is read in memory, its `_chat.txt` parsed and
+  each photo paired with the message that sent it — no separate image uploads.
+- **Date range**: pick the days you want; messages outside the range are dropped and
+  the remaining items are numbered sequentially.
+- **Sequence**: every item carries a `Seq` number that decides its place in the PDF,
+  assigned in chat order so each photo is followed by the messages that came with it.
+  Change a number to reorder; the resulting order is previewed before building.
 - **Translation**: every selected block containing Arabic is translated to French.
   The PDF can contain the original only, the French only, or both side by side.
 - **PDF options**: title, page size (A4/Letter/Legal), portrait or landscape,
   margins, sender/date labels and page numbers.
 - Arabic is shaped with `arabic-reshaper` + `python-bidi` and drawn with an
-  embedded Arabic font (Amiri), so right-to-left lines render correctly.
+  embedded Arabic font (VIP Rawy, Amiri fallback), so right-to-left lines render correctly.
 
 ## Run with Docker (recommended)
 
