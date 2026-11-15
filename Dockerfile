@@ -1,11 +1,5 @@
 FROM python:3.12-slim
 
-ARG APP_VERSION=1.1.0
-LABEL org.opencontainers.image.title="W2PDF" \
-      org.opencontainers.image.description="WhatsApp images and texts to PDF with Arabic to French translation" \
-      org.opencontainers.image.version="${APP_VERSION}" \
-      org.opencontainers.image.source="https://github.com/kouljihate/w2pdf"
-
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DEFAULT_TIMEOUT=180 \
@@ -44,6 +38,13 @@ EXPOSE 8501
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4).status == 200 else 1)"
+
+# Keep the label last so a version bump only rebuilds this metadata layer.
+ARG APP_VERSION=1.1.1
+LABEL org.opencontainers.image.title="W2PDF" \
+      org.opencontainers.image.description="WhatsApp images and texts to PDF with Arabic to French translation" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.source="https://github.com/kouljihate/w2pdf"
 
 CMD ["streamlit", "run", "app.py", \
      "--server.address=0.0.0.0", \

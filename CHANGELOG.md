@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.1 — 2026-11-15
+
+- Version number shown as a badge in the app header and in the README.
+
 ## 1.1.0 — 2026-11-15
 
 - Every image and text block now carries a `Seq` number; the PDF is laid out in

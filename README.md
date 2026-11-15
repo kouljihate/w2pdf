@@ -1,6 +1,9 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-**Version 1.1.0** · [Changelog](CHANGELOG.md) · <https://github.com/kouljihate/w2pdf>
+[![version](https://img.shields.io/badge/version-1.1.1-128C7E?style=flat-square)](CHANGELOG.md)
+[![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
+
+<https://github.com/kouljihate/w2pdf>
 
 A Streamlit app that turns selected WhatsApp photos and chat messages into one
 PDF, with an Arabic → French translation module.

@@ -49,10 +49,27 @@ st.markdown(
         text-transform: uppercase; letter-spacing: .12em;
         font-size: .72rem; font-weight: 700; opacity: .85;
       }
+      .w2p-badge {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .22);
+        border: 1px solid rgba(255, 255, 255, .4);
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        vertical-align: 1px;
+      }
       div[data-testid="stFileUploaderDropzone"] {border-radius: 12px;}
     </style>
+    """,
+    unsafe_allow_html=True,
+)
+st.markdown(
+    f"""
     <div class="w2p-hero">
-      <div class="kicker">WhatsApp → PDF</div>
+      <div class="kicker">WhatsApp → PDF<span class="w2p-badge">v{__version__}</span></div>
       <h1>Turn selected chats and photos into one clean PDF</h1>
       <p>Tick the images and messages you want, translate Arabic to French, then download the document.</p>
     </div>
