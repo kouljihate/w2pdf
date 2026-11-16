@@ -29,14 +29,17 @@ PAGE_SIZES: dict[str, tuple[float, float]] = {"A4": A4, "Letter": LETTER, "Legal
 
 TRANSLATION_MODE_LABELS: dict[str, str] = {
     "none": "Original only",
-    "both": "Original + French",
-    "translated": "French only",
+    "both": "Original + translation",
+    "translated": "Translation only",
 }
+
+# Short marker printed above a translated block, matching the chosen pairing.
+TARGET_LABELS: dict[str, str] = {"en": "EN", "fr": "FR"}
 
 INK = HexColor("#111827")
 MUTED = HexColor("#6B7280")
 RULE = HexColor("#D1D5DB")
-FRENCH_INK = HexColor("#0B5F58")
+TRANSLATION_INK = HexColor("#0B5F58")
 
 _ARABIC_RE = re.compile(
     r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]"
@@ -79,6 +82,7 @@ class PdfOptions:
     title: str = ""
     images_per_page: int = 1
     translation_mode: str = "none"
+    target_language: str = "fr"
     show_metadata: bool = True
     page_numbers: bool = True
     max_image_px: int = 2200
@@ -368,12 +372,13 @@ class _Document:
             self.meta_line(block.sender, block.timestamp)
 
         show_label = mode == "both" and bool(block.translation)
+        marker = TARGET_LABELS.get(self.options.target_language, "FR")
         for index, body in enumerate(parts):
             if index == 1 and show_label:
                 self._advance(2)
-                self.draw_text("FR", size=7, color=FRENCH_INK, bold=True, line_gap=1.3)
+                self.draw_text(marker, size=7, color=TRANSLATION_INK, bold=True, line_gap=1.3)
             is_translation = index == 1 and bool(block.translation)
-            self.draw_text(body, size=10.5, color=FRENCH_INK if is_translation else INK)
+            self.draw_text(body, size=10.5, color=TRANSLATION_INK if is_translation else INK)
         self._advance(9)
 
     def add_image(self, block: ImageBlock, slot_height: float) -> None:

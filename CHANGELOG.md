@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.12.0 — 2026-11-16
+
+- Offer Arabic-English and Arabic-French as the two duo-language pairings
+
 ## 1.11.0 — 2026-11-16
 
 - Theme the app with Bootswatch Cyborg and add a duo-language switch

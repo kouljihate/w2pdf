@@ -1,12 +1,12 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.11.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.12.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
 
 A Streamlit app that turns selected WhatsApp photos and chat messages into one
-PDF, with an Arabic → French translation module.
+PDF, with an Arabic → English/French translation module.
 
 ## What it does
 
@@ -18,8 +18,8 @@ PDF, with an Arabic → French translation module.
 - **Sequence**: every item carries a `Seq` number that decides its place in the PDF,
   assigned in chat order so each photo is followed by the messages that came with it.
   Change a number to reorder; the resulting order is previewed before building.
-- **Translation**: every selected block containing Arabic is translated to French.
-  The PDF can contain the original only, the French only, or both side by side.
+- **Translation**: every selected block containing Arabic is translated, and the PDF
+  carries the Arabic message together with its translation on the same page.
 - **PDF options**: title, page size (A4/Letter/Legal), portrait or landscape,
   margins, sender/date labels and page numbers.
 - **Download or keep**: the finished PDF is always offered as **Download PDF locally**,
@@ -36,7 +36,8 @@ When a `.zip` is loaded the app follows this order:
 
 1. Read the chat log (`_chat.txt`) first and keep only the messages inside the chosen
    date range.
-2. Text messages: Arabic is translated to French and added to the PDF. Numbers are
+2. Text messages: Arabic is translated (English or French, per the language switch) and
+   printed next to the original. Numbers are
    always printed with Latin digits, so `٢٥٠٠` becomes `2500`.
 3. `jpg` / `jpeg` / `png` / `webp` / `bmp` attachments are embedded as they are.
 4. Videos (`mp4`, `3gp`, `mov`, `webm`, `mkv`, `avi`) get one still frame extracted with
@@ -101,10 +102,10 @@ Arabic text rather than printing empty boxes.
 - Typography is duo-language: **Comfortaa** (Light/Regular/Bold) for Latin and French,
   **VIP Rawy** (Regular/Bold) for Arabic. The CSS font stack falls back per glyph, and
   the PDF registers both faces with ReportLab (Amiri/Noto remain system fallbacks).
-- The sidebar's **Language** switch alternates between Duo (العربية + Français), French
-  only and Arabic only. It sets what the PDF prints *and* swaps
-  `--bs-body-font-family` between the Comfortaa and VIP Rawy stacks, so the interface
-  follows the same pairing.
+- The sidebar's **Language** switch offers the two duo-language pairings:
+  **Arabic-English** and **Arabic-French**. Either way every page shows the Arabic
+  message with its translation, and `--bs-body-font-family` pairs Comfortaa (Latin) with
+  VIP Rawy (Arabic) per glyph.
 - Fonts are loaded from `static/fonts` through Streamlit's static serving
   (`server.enableStaticServing`, URL prefix `/app/static/`), so nothing is fetched online.
 - Comfortaa ships in this repo under the SIL Open Font License
@@ -148,7 +149,7 @@ app.py                  Streamlit UI
 w2pdf/pdf_builder.py    ReportLab layout: images, wrapped RTL text, footer
 w2pdf/whatsapp.py       WhatsApp chat export parser (media references, sequential items)
 w2pdf/archive.py        Reads the .zip export: chat log plus photos, no disk writes
-w2pdf/translate.py      Arabic → French translation
+w2pdf/translate.py      Arabic → English/French translation
 w2pdf/fonts.py          Arabic font discovery
 Dockerfile              python:3.12-slim image with Arabic fonts
 docker-compose.yml      one-command startup on port 8501

@@ -26,7 +26,7 @@ from w2pdf.pdf_builder import (
     order_blocks,
 )
 from w2pdf.media import extract_video_frame
-from w2pdf.translate import TranslationError, contains_arabic, translate_arabic_to_french
+from w2pdf.translate import TranslationError, contains_arabic, target_name, translate_arabic
 from w2pdf.whatsapp import chat_items
 
 st.set_page_config(
@@ -38,18 +38,10 @@ st.set_page_config(
 
 STYLE_FILES = ("static/theme/bootstrap-w2pdf.css", "static/css/app.css")
 
-# The language switch decides both what the PDF prints and which typeface the app uses:
-# Comfortaa covers English and French, VIP Rawy covers Arabic, and Duo pairs them per glyph.
-LANGUAGE_MODES = {
-    "Duo — العربية + Français": "both",
-    "Français": "translated",
-    "العربية": "none",
-}
-LANGUAGE_FONT_STACKS = {
-    "Duo — العربية + Français": '"Comfortaa", "VIP Rawy", "Segoe UI", system-ui, sans-serif',
-    "Français": '"Comfortaa", "Segoe UI", system-ui, sans-serif',
-    "العربية": '"VIP Rawy", "Comfortaa", "Segoe UI", sans-serif',
-}
+# Both pairings are duo-language: every page shows the Arabic message and its
+# English or French translation. Comfortaa sets the Latin type, VIP Rawy the Arabic.
+LANGUAGE_TARGETS = {"Arabic-English": "en", "Arabic-French": "fr"}
+DUO_FONT_STACK = '"Comfortaa", "VIP Rawy", "Segoe UI", system-ui, sans-serif'
 
 
 @st.cache_data(show_spinner=False)
@@ -80,9 +72,9 @@ st.markdown(
 
 
 @st.cache_data(show_spinner=False, ttl=24 * 3600)
-def translate_one(text: str) -> str:
-    """Translate a single Arabic block, cached across rebuilds."""
-    return translate_arabic_to_french(text)
+def translate_one(text: str, target: str) -> str:
+    """Translate a single Arabic block, cached per language across rebuilds."""
+    return translate_arabic(text, target)
 
 
 def sequence_of(value, fallback: int) -> float:
@@ -128,18 +120,19 @@ with st.sidebar:
     st.header("Language")
     language = st.radio(
         "Switch language",
-        list(LANGUAGE_MODES),
+        list(LANGUAGE_TARGETS),
         index=0,
         help=(
-            "Duo prints every message in Arabic and in French; Français translates the "
-            "Arabic and prints the French; العربية keeps the messages as written. The same "
-            "choice sets the typeface: Comfortaa for English/French, VIP Rawy for Arabic."
+            "Every page prints the Arabic message together with its translation in the "
+            "language you choose here. Comfortaa sets the English/French type, VIP Rawy "
+            "the Arabic one."
         ),
     )
-    translation_mode = LANGUAGE_MODES[language]
-    translate_on = translation_mode != "none"
+    target_language = LANGUAGE_TARGETS[language]
+    translation_mode = "both"
     st.caption(
-        "Arabic → French: MyMemory first, Google as fallback — no API key, needs internet."
+        f"Arabic → {target_name(target_language)}: MyMemory first, Google as fallback — "
+        "no API key, needs internet."
     )
 
     st.divider()
@@ -163,7 +156,7 @@ with st.sidebar:
 
 # Apply the pairing chosen above: every rule in the theme reads this variable.
 st.markdown(
-    f"<style>:root {{ --bs-body-font-family: {LANGUAGE_FONT_STACKS[language]}; }}</style>",
+    f"<style>:root {{ --bs-body-font-family: {DUO_FONT_STACK}; }}</style>",
     unsafe_allow_html=True,
 )
 
@@ -440,11 +433,14 @@ if build_clicked:
         unique_arabic = sorted({text for text in arabic_blocks})
         with st.status("Building the PDF…", expanded=True) as status:
             if translation_mode != "none" and unique_arabic:
-                st.write(f"Translating {len(unique_arabic)} Arabic block(s) to French…")
+                st.write(
+                    f"Translating {len(unique_arabic)} Arabic block(s) to "
+                    f"{target_name(target_language)}…"
+                )
                 progress = st.progress(0.0)
                 for index, text in enumerate(unique_arabic, start=1):
                     try:
-                        translations[text] = translate_one(text)
+                        translations[text] = translate_one(text, target_language)
                     except TranslationError as exc:
                         # Keep the original wording instead of losing the whole document.
                         translation_errors.append((text, str(exc)))
@@ -486,6 +482,7 @@ if build_clicked:
                 title=title,
                 images_per_page=images_per_page,
                 translation_mode=translation_mode,
+                target_language=target_language,
                 show_metadata=show_metadata,
                 page_numbers=page_numbers,
             )

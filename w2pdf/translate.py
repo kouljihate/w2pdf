@@ -1,4 +1,4 @@
-"""Arabic → French translation module.
+"""Arabic → English/French translation module.
 
 Uses the keyless free translation backends exposed by `deep-translator`:
 MyMemory first (generous anonymous quota, reliable from shared IPs) with Google
@@ -13,7 +13,13 @@ import re
 from deep_translator import GoogleTranslator, MyMemoryTranslator
 
 SOURCE_LANGUAGE = "ar"
-TARGET_LANGUAGE = "fr"
+DEFAULT_TARGET = "fr"
+
+# The two duo-language pairings the app offers: Arabic with English, Arabic with French.
+TARGET_LANGUAGES: dict[str, dict[str, str]] = {
+    "en": {"name": "English", "mymemory": "en-US", "google": "en"},
+    "fr": {"name": "French", "mymemory": "fr-FR", "google": "fr"},
+}
 
 # Characters per request. MyMemory rejects long queries, Google accepts ~5000.
 PROVIDER_CHUNK_CHARS: dict[str, int] = {"mymemory": 400, "google": 4000}
@@ -60,17 +66,23 @@ def _split_chunks(text: str, limit: int) -> list[str]:
     return [chunk for chunk in chunks if chunk.strip()]
 
 
-def _make_translator(provider: str):
+def target_name(target: str) -> str:
+    """Readable name of a target language code."""
+    return TARGET_LANGUAGES[target if target in TARGET_LANGUAGES else DEFAULT_TARGET]["name"]
+
+
+def _make_translator(provider: str, target: str):
+    settings = TARGET_LANGUAGES[target if target in TARGET_LANGUAGES else DEFAULT_TARGET]
     if provider == "mymemory":
-        return MyMemoryTranslator(source="ar-SA", target="fr-FR")
+        return MyMemoryTranslator(source="ar-SA", target=settings["mymemory"])
     if provider == "google":
-        return GoogleTranslator(source=SOURCE_LANGUAGE, target=TARGET_LANGUAGE)
+        return GoogleTranslator(source=SOURCE_LANGUAGE, target=settings["google"])
     raise ValueError(f"Unknown translation provider: {provider}")
 
 
-def _translate_with(text: str, provider: str) -> str:
+def _translate_with(text: str, provider: str, target: str) -> str:
     limit = PROVIDER_CHUNK_CHARS[provider]
-    translator = _make_translator(provider)
+    translator = _make_translator(provider, target)
     parts: list[str] = []
     for chunk in _split_chunks(text, limit):
         translated = translator.translate(chunk)
@@ -80,25 +92,33 @@ def _translate_with(text: str, provider: str) -> str:
     return "\n".join(parts)
 
 
-def translate_arabic_to_french(text: str, provider: str = "auto") -> str:
-    """Translate one Arabic block into French.
+def translate_arabic(text: str, target: str = DEFAULT_TARGET, provider: str = "auto") -> str:
+    """Translate one Arabic block into English or French.
 
-    ``provider="auto"`` tries every backend in order. Returns an empty string
-    when the block holds no Arabic; raises TranslationError when all backends fail.
+    ``target`` is ``"en"`` or ``"fr"``; ``provider="auto"`` tries every backend in
+    order. Returns an empty string when the block holds no Arabic; raises
+    TranslationError when all backends fail.
     """
     text = (text or "").strip()
     if not text or not contains_arabic(text):
         return ""
 
+    language = target_name(target)
+    target = target if target in TARGET_LANGUAGES else DEFAULT_TARGET
     providers = PROVIDER_ORDER if provider == "auto" else (provider,)
     problems: list[str] = []
     for name in providers:
         try:
-            return _translate_with(text, name)
+            return _translate_with(text, name, target)
         except Exception as exc:  # deep-translator raises plain exceptions
             problems.append(f"{name}: {exc}")
 
     raise TranslationError(
-        "Arabic → French translation failed. Check the container's internet access "
+        f"Arabic → {language} translation failed. Check the container's internet access "
         "and try again. Details — " + " | ".join(problems)
     )
+
+
+def translate_arabic_to_french(text: str, provider: str = "auto") -> str:
+    """Translate one Arabic block into French (kept for existing callers)."""
+    return translate_arabic(text, "fr", provider)
