@@ -16,6 +16,8 @@ from .whatsapp import ChatMessage, decode_export, parse_chat
 
 IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"})
 VIDEO_EXTENSIONS = frozenset({".mp4", ".3gp", ".mov", ".webm", ".mkv", ".avi", ".m4v"})
+# Voice notes arrive as Opus; the rest are other audio WhatsApp can export.
+AUDIO_EXTENSIONS = frozenset({".opus", ".ogg", ".oga", ".mp3", ".m4a", ".aac", ".wav", ".amr"})
 
 MAX_ARCHIVE_BYTES = 400 * 1024 * 1024
 MAX_IMAGE_BYTES = 30 * 1024 * 1024
@@ -35,6 +37,8 @@ class ChatExport:
     messages: list[ChatMessage] = field(default_factory=list)
     images: dict[str, bytes] = field(default_factory=dict)
     videos: dict[str, bytes] = field(default_factory=dict)
+    # Audio is named only: a PDF cannot carry a sound file, so the bytes are skipped.
+    audios: set[str] = field(default_factory=set)
     chat_name: str = ""
 
     def image_for(self, reference: str | None) -> bytes | None:
@@ -50,6 +54,12 @@ class ChatExport:
             return None
         key = os.path.basename(reference.replace("\\", "/")).lower()
         return self.videos.get(key)
+
+    def has_audio(self, reference: str | None) -> bool:
+        """True when the reference names a voice note or other audio in the archive."""
+        if not reference:
+            return False
+        return os.path.basename(reference.replace("\\", "/")).lower() in self.audios
 
 
 def _is_unsafe(name: str) -> bool:
@@ -83,6 +93,7 @@ def load_chat_archive(data: bytes) -> ChatExport:
     text_names: list[str] = []
     image_names: list[str] = []
     video_names: list[str] = []
+    audio_names: list[str] = []
     with archive:
         infos = [info for info in archive.infolist() if not info.is_dir()]
         for info in infos:
@@ -99,6 +110,8 @@ def load_chat_archive(data: bytes) -> ChatExport:
             elif extension in VIDEO_EXTENSIONS:
                 if info.file_size <= MAX_VIDEO_FILE_BYTES:
                     video_names.append(info.filename)
+            elif extension in AUDIO_EXTENSIONS:
+                audio_names.append(info.filename)
 
         if not text_names:
             raise ArchiveError(
@@ -137,6 +150,16 @@ def load_chat_archive(data: bytes) -> ChatExport:
             base = os.path.basename(name.replace("\\", "/"))
             videos.setdefault(base.lower(), payload)
 
+    audios = {
+        os.path.basename(name.replace("\\", "/")).lower() for name in audio_names
+    }
+
     messages = parse_chat(decode_export(raw))
     chat_name = os.path.splitext(os.path.basename(chat_log.replace("\\", "/")))[0]
-    return ChatExport(messages=messages, images=images, videos=videos, chat_name=chat_name)
+    return ChatExport(
+        messages=messages,
+        images=images,
+        videos=videos,
+        audios=audios,
+        chat_name=chat_name,
+    )

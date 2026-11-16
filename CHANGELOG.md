@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.8.0 — 2026-11-16
+
+- List Opus voice notes as audio instead of generic attachments
+
 ## 1.7.1 — 2026-11-16
 
 - Show the export's own d/m/yy dates in the item table so none get clipped

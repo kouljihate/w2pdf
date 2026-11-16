@@ -165,15 +165,18 @@ def chat_items(
     messages: list[ChatMessage],
     images: dict[str, bytes] | None = None,
     videos: dict[str, bytes] | None = None,
+    audios: set[str] | None = None,
 ) -> list[dict]:
     """Map messages to sequential document items.
 
     Photos are embedded as they are, videos are flagged so a still frame can be
-    taken at build time, plain text is translated later, and Facebook links are
-    dropped. Numbers run in chat order, so every item keeps its place.
+    taken at build time, audio is listed as a voice message (a PDF cannot play
+    it), plain text is translated later, and Facebook links are dropped. Numbers
+    run in chat order, so every item keeps its place.
     """
     images = images or {}
     videos = videos or {}
+    audios = audios or set()
     items: list[dict] = []
 
     for message in messages:
@@ -193,6 +196,7 @@ def chat_items(
                     "type": "Photo",
                     "sender": message.sender,
                     "date": message.short_label,
+                    "date_full": message.time_label,
                     "content": content,
                     "media": reference,
                     "caption": caption,
@@ -213,10 +217,32 @@ def chat_items(
                     "type": "Video",
                     "sender": message.sender,
                     "date": message.short_label,
+                    "date_full": message.time_label,
                     "content": content,
                     "media": reference,
                     "caption": caption,
                     "text": "",
+                    "data": b"",
+                }
+            )
+            continue
+
+        if key and key in audios:
+            content = "Voice message"
+            if caption:
+                content += f" — {caption}"
+            items.append(
+                {
+                    "include": True,
+                    "seq": sequence,
+                    "type": "Audio",
+                    "sender": message.sender,
+                    "date": message.short_label,
+                    "date_full": message.time_label,
+                    "content": content,
+                    "media": reference,
+                    "caption": caption,
+                    "text": content,
                     "data": b"",
                 }
             )
@@ -232,6 +258,7 @@ def chat_items(
                 "type": "Text",
                 "sender": message.sender,
                 "date": message.short_label,
+                "date_full": message.time_label,
                 "content": " ".join(text.split())[:120],
                 "media": "",
                 "caption": "",

@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.7.1-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.8.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -40,7 +40,10 @@ When a `.zip` is loaded the app follows this order:
 3. `jpg` / `jpeg` / `png` / `webp` / `bmp` attachments are embedded as they are.
 4. Videos (`mp4`, `3gp`, `mov`, `webm`, `mkv`, `avi`) get one still frame extracted with
    ffmpeg (bundled through `imageio-ffmpeg`) and that frame is placed in the PDF.
-5. Facebook links (`facebook.com`, `fb.watch`, `fb.me`) are ignored — a message that is
+5. Audio (`opus`, `ogg`, `mp3`, `m4a`, `aac`, `wav`, `amr` — WhatsApp voice notes exported
+   as `PTT-….opus`) cannot play from a PDF, so each one is listed as a “Voice message”
+   line in its place, keeping the caption when the note had one.
+6. Facebook links (`facebook.com`, `fb.watch`, `fb.me`) are ignored — a message that is
    only a link is dropped, and a link inside longer text is stripped out.
 
 ## Run with Docker (recommended)

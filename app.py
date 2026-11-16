@@ -219,10 +219,11 @@ else:
                 f"{len(selected_messages)} of {len(archive.messages)} messages between "
                 f"{start_day:%d/%m/%Y} and {end_day:%d/%m/%Y}"
                 + (f" · {outside} outside the range" if outside else "")
-                + f" · {len(archive.images)} photo(s) · {len(archive.videos)} video(s) in the archive"
+                + f" · {len(archive.images)} photo(s) · {len(archive.videos)} video(s) · "
+                f"{len(archive.audios)} audio file(s) in the archive"
             )
 
-        rows = chat_items(selected_messages, archive.images, archive.videos)
+        rows = chat_items(selected_messages, archive.images, archive.videos, archive.audios)
         if not rows:
             st.warning("No messages in the selected range.")
         else:
@@ -276,6 +277,15 @@ else:
                             kind="video",
                         )
                     )
+                elif source_row["type"] == "Audio":
+                    export_blocks.append(
+                        TextBlock(
+                            text=source_row["text"],
+                            sender=source_row["sender"],
+                            timestamp=source_row.get("date_full") or source_row["date"],
+                            sequence=sequence,
+                        )
+                    )
                 elif source_row["media"]:
                     export_blocks.append(
                         ImageBlock(
@@ -290,7 +300,7 @@ else:
                         TextBlock(
                             text=source_row["text"],
                             sender=source_row["sender"],
-                            timestamp=source_row["date"],
+                            timestamp=source_row.get("date_full") or source_row["date"],
                             sequence=sequence,
                         )
                     )
@@ -321,7 +331,12 @@ photo_total = sum(
 video_total = sum(
     1 for block in export_blocks if isinstance(block, ImageBlock) and block.kind == "video"
 )
-text_total = len(export_blocks) - photo_total - video_total
+audio_total = sum(
+    1
+    for block in export_blocks
+    if isinstance(block, TextBlock) and block.text.startswith("Voice message")
+)
+text_total = len(export_blocks) - photo_total - video_total - audio_total
 arabic_blocks = [
     block.text
     for block in export_blocks
@@ -331,6 +346,7 @@ arabic_blocks = [
 st.caption(
     f"{photo_total} photo{'s' if photo_total != 1 else ''} · "
     f"{video_total} video{'s' if video_total != 1 else ''} · "
+    f"{audio_total} voice message{'s' if audio_total != 1 else ''} · "
     f"{text_total} text block{'s' if text_total != 1 else ''} · "
     f"{len(arabic_blocks)} to translate"
 )
