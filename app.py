@@ -173,7 +173,12 @@ with st.sidebar:
         st.warning(t("font_warning"))
 
     st.divider()
-    st.caption(f"W2PDF v{__version__}")
+    st.markdown(
+        f'<div class="w2p-sidebar-footer">'
+        f'<span class="w2p-badge w2p-badge--version">v{__version__}</span>'
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
 # Every theme rule reads this variable: Comfortaa for Latin, VIP Rawy for Arabic.
 st.markdown(

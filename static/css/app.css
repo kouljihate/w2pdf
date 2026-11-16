@@ -43,3 +43,21 @@
   letter-spacing: 0.04em;
   vertical-align: 1px;
 }
+
+/* Version badge centred in the sidebar footer. */
+.w2p-sidebar-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0 10px;
+}
+
+.w2p-badge--version {
+  margin-left: 0;
+  padding: 4px 14px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: #93c0e1;
+  background: rgba(42, 159, 214, 0.14);
+  border: 1px solid rgba(42, 159, 214, 0.45);
+}
