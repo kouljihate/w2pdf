@@ -36,6 +36,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# The Bootswatch Cyborg sheet is served from static/theme as a plain file; the two
+# smaller sheets below are inlined so they always land after it and win the cascade.
+BOOTSWATCH_HREF = "/app/static/theme/bootswatch-cyborg.min.css"
 STYLE_FILES = ("static/theme/bootstrap-w2pdf.css", "static/css/app.css")
 
 # Both pairings are duo-language: every page shows the Arabic message and its
@@ -57,6 +60,9 @@ def load_styles(*paths: str) -> str:
     return "\n".join(sheets)
 
 
+st.markdown(
+    f'<link rel="stylesheet" href="{BOOTSWATCH_HREF}">', unsafe_allow_html=True
+)
 st.markdown(f"<style>{load_styles(*STYLE_FILES)}</style>", unsafe_allow_html=True)
 st.markdown(
     f"""

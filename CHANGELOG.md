@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.12.1 — 2026-11-16
+
+- Serve the Bootswatch Cyborg stylesheet from static/theme instead of only mirroring its tokens
+
 ## 1.12.0 — 2026-11-16
 
 - Offer Arabic-English and Arabic-French as the two duo-language pairings

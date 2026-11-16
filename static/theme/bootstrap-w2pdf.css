@@ -1,8 +1,9 @@
 /*
- * W2PDF theme — Bootswatch "Cyborg" (dark) expressed as a Bootstrap 5 design
- * layer (variables + component styles) on top of Streamlit, so the app reads
- * like a Cyborg page without pulling in Bootstrap's reset, which would break
- * Streamlit's own layout.
+ * W2PDF compatibility layer on top of the vendored Bootswatch "Cyborg" theme
+ * (`static/theme/bootswatch-cyborg.min.css`, loaded first, MIT licensed). That
+ * sheet brings Bootstrap's full reset, so this file re-points the tokens and
+ * component styles at Streamlit's markup and undoes the reset where it would
+ * disturb Streamlit's own scaffolding.
  *
  * Duo-language typography:
  *   Comfortaa      → Latin UI and PDF text (sans, rounded, three weights)
@@ -116,6 +117,13 @@
 .stApp [data-testid="stMarkdownContainer"] p,
 .stApp [data-testid="stWidgetLabel"] p {
   color: var(--bs-body-color);
+}
+
+/* Bootstrap's reboot gives every paragraph a 1rem bottom margin; Streamlit spaces
+   its own blocks, so the theme must not add a second rhythm on top of it. */
+.stApp [data-testid="stMarkdownContainer"] p:last-child,
+.stApp [data-testid="stWidgetLabel"] p:last-child {
+  margin-bottom: 0;
 }
 
 .stApp [data-testid="stCaptionContainer"],

@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.12.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.12.1-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -92,12 +92,15 @@ Arabic text rather than printing empty boxes.
 
 ## Theming and fonts
 
-- `static/theme/bootstrap-w2pdf.css` is a **free Bootstrap 5 design layer** carrying the
-  **Bootswatch Cyborg** dark palette: Bootstrap's colour, radius, spacing, shadow and
-  component tokens (buttons, inputs, alerts, expanders, tables, uploader) applied to
-  Streamlit's markup. Bootstrap's reset is deliberately not loaded — it would fight
-  Streamlit's own layout. `.streamlit/config.toml` mirrors the same colours so the
-  widgets Streamlit draws itself match the layer.
+- `static/theme/bootswatch-cyborg.min.css` is the **Bootswatch Cyborg** sheet itself
+  (v5.3.3, MIT), copied into the repo so nothing is fetched from a CDN and builds work
+  offline. It is served from `/app/static/theme/` and linked before the app's own CSS.
+- `static/theme/bootstrap-w2pdf.css` sits on top of it as a compatibility layer: it
+  re-points the Bootstrap tokens at the same Cyborg colours and applies them to
+  Streamlit's markup (buttons, inputs, alerts, expanders, tables, uploader), and it
+  undoes the parts of Bootstrap's reset that would space out Streamlit's own blocks.
+  `.streamlit/config.toml` mirrors the colours so the widgets Streamlit draws itself
+  match.
 - `static/css/app.css` holds app-specific pieces (hero, version badge).
 - Typography is duo-language: **Comfortaa** (Light/Regular/Bold) for Latin and French,
   **VIP Rawy** (Regular/Bold) for Arabic. The CSS font stack falls back per glyph, and
