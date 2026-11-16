@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.12.1-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.13.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -105,10 +105,36 @@ Arabic text rather than printing empty boxes.
 - Typography is duo-language: **Comfortaa** (Light/Regular/Bold) for Latin and French,
   **VIP Rawy** (Regular/Bold) for Arabic. The CSS font stack falls back per glyph, and
   the PDF registers both faces with ReportLab (Amiri/Noto remain system fallbacks).
-- The sidebar's **Language** switch offers the two duo-language pairings:
-  **Arabic-English** and **Arabic-French**. Either way every page shows the Arabic
-  message with its translation, and `--bs-body-font-family` pairs Comfortaa (Latin) with
-  VIP Rawy (Arabic) per glyph.
+- `--bs-body-font-family` pairs Comfortaa (Latin) with VIP Rawy (Arabic) per glyph, so
+every page of the app and of the PDF can mix both scripts.
+
+## Two language settings
+
+They are independent on purpose.
+
+**Web app language** (sidebar, top) renders the interface itself in one language or as a
+duo pairing:
+
+| Option | Shows |
+| --- | --- |
+| Français | French only |
+| العربية | Arabic only |
+| English | English only |
+| Duo 1 — العربية / Français | French and Arabic, side by side |
+| Duo 2 — العربية / English | English and Arabic, side by side |
+
+**PDF output language** (sidebar, under Document) decides what the document prints:
+
+| Option | PDF content |
+| --- | --- |
+| French | Arabic translated to French only |
+| Arabic | Messages as written, no translation |
+| English | Arabic translated to English only |
+| Duo 1 — Arabic / French | Arabic message plus its French translation |
+| Duo 2 — Arabic / English | Arabic message plus its English translation |
+
+The translated block carries a small `FR` or `EN` marker in the duo modes. Interface
+strings live in `w2pdf/i18n.py`; the PDF modes are declared in `app.py`.
 - Fonts are loaded from `static/fonts` through Streamlit's static serving
   (`server.enableStaticServing`, URL prefix `/app/static/`), so nothing is fetched online.
 - Comfortaa ships in this repo under the SIL Open Font License

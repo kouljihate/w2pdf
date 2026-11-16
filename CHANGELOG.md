@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.13.0 — 2026-11-16
+
+- Separate the web app language from the PDF output language
+
 ## 1.12.1 — 2026-11-16
 
 - Serve the Bootswatch Cyborg stylesheet from static/theme instead of only mirroring its tokens
