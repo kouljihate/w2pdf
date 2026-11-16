@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.10.2 — 2026-11-16
+
+- Read month-first dates like 1/14/26 so no row loses its day
+
 ## 1.10.1 — 2026-11-16
 
 - Read Arabic-Indic digits and meridiem in chat timestamps so no date cell is empty

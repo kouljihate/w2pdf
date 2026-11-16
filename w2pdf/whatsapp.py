@@ -161,8 +161,14 @@ def _parse_by_parts(date: str, time: str) -> datetime | None:
     numbers = [int(piece) for piece in pieces]
     if numbers[0] > 31:  # year first: 2026/11/05
         year, month, day = numbers
-    else:  # day first: 5/11/26
-        day, month, year = numbers
+    else:
+        first, second, year = numbers
+        # A number above 12 can only be a day, so 1/14/26 is month-first (US phones)
+        # while 14/1/26 and the ambiguous 5/11/26 stay day-first.
+        if first <= 12 < second:
+            month, day = first, second
+        else:
+            day, month = first, second
     if year < 100:
         year += 2000
 
