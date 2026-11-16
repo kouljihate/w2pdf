@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import io
 import re
+import unicodedata
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -88,12 +89,38 @@ def has_arabic(text: str) -> bool:
     return bool(text) and bool(_ARABIC_RE.search(text))
 
 
+# Numbers are written with Latin digits in the document: Arabic-Indic numerals also get
+# reordered by the bidi algorithm (٢٥٠٠ printed as ٠٠٥٢), which silently mangles prices
+# and phone numbers.
+_DIGITS = str.maketrans(
+    {
+        **{arabic: latin for arabic, latin in zip("٠١٢٣٤٥٦٧٨٩", "0123456789")},
+        **{persian: latin for persian, latin in zip("۰۱۲۳۴۵۶۷۸۹", "0123456789")},
+        "٫": ".",
+        "٬": ",",
+    }
+)
+
+
+def latin_digits(text: str) -> str:
+    """Rewrite Arabic-Indic and Persian numerals as plain 0-9 digits."""
+    return text.translate(_DIGITS)
+
+
+def _printable(text: str) -> str:
+    """Drop characters the embedded fonts cannot draw (emoji and other symbols)."""
+    return "".join(
+        char for char in text if unicodedata.category(char) not in {"So", "Cs", "Co", "Cn"}
+    )
+
+
 def shape_arabic(text: str) -> str:
     """Reshape Arabic letters and apply the bidi algorithm for visual drawing."""
-    return get_display(arabic_reshaper.reshape(text))
+    return get_display(arabic_reshaper.reshape(_printable(latin_digits(text))))
 
 
 def _display(text: str) -> str:
+    text = _printable(latin_digits(text))
     return shape_arabic(text) if has_arabic(text) else text
 
 
@@ -242,7 +269,7 @@ class _Document:
 
     # -- content ---------------------------------------------------------
     def title_block(self, title: str) -> None:
-        title = title.strip()
+        title = _printable(latin_digits(title)).strip()
         if not title:
             return
         size = 21
@@ -262,6 +289,37 @@ class _Document:
         self.canvas.line(self.left, self.y, self.right, self.y)
         self._advance(8)
 
+    def meta_line(self, sender: str, timestamp: str) -> None:
+        """Draw sender and date on one line: the date stays readable left-to-right.
+
+        Drawing them together in one right-to-left run let bidi flip the date to
+        "17:13 14/01/2026" and turned the sender's emoji into a stray null glyph.
+        """
+        sender = _printable(latin_digits(sender or "")).strip()
+        timestamp = _printable(latin_digits(timestamp or "")).strip()
+        if not (sender or timestamp):
+            return
+        size = 8
+        line_height = size * 1.5
+        self._ensure(line_height)
+        self._advance(line_height)
+        baseline = self.y + size * 0.35
+        canvas = self.canvas
+        canvas.setFillColor(MUTED)
+        right = self.right
+        if timestamp:
+            canvas.setFont(self.latin_bold, size)
+            canvas.drawRightString(right, baseline, timestamp)
+            right -= pdfmetrics.stringWidth(timestamp, self.latin_bold, size) + 9
+        if sender:
+            if has_arabic(sender):
+                canvas.setFont(self.arabic_bold, size)
+                canvas.drawRightString(right, baseline, _display(sender))
+            else:
+                canvas.setFont(self.latin_bold, size)
+                canvas.drawRightString(right, baseline, sender)
+        self.page_content = True
+
     def draw_text(
         self,
         text: str,
@@ -273,7 +331,7 @@ class _Document:
         align: str = "auto",
     ) -> None:
         for raw_line in text.split("\n"):
-            raw_line = raw_line.rstrip()
+            raw_line = _printable(latin_digits(raw_line)).rstrip()
             if not raw_line.strip():
                 self._advance(size * line_gap * 0.6)
                 continue
@@ -307,9 +365,7 @@ class _Document:
             parts.append(block.text)
 
         if show_metadata:
-            meta = " | ".join(p for p in (block.sender, block.timestamp) if p)
-            if meta:
-                self.draw_text(meta, size=8, color=MUTED, bold=True, line_gap=1.5)
+            self.meta_line(block.sender, block.timestamp)
 
         show_label = mode == "both" and bool(block.translation)
         for index, body in enumerate(parts):

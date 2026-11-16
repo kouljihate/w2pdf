@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.10.2-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.10.3-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -36,7 +36,8 @@ When a `.zip` is loaded the app follows this order:
 
 1. Read the chat log (`_chat.txt`) first and keep only the messages inside the chosen
    date range.
-2. Text messages: Arabic is translated to French and added to the PDF.
+2. Text messages: Arabic is translated to French and added to the PDF. Numbers are
+   always printed with Latin digits, so `٢٥٠٠` becomes `2500`.
 3. `jpg` / `jpeg` / `png` / `webp` / `bmp` attachments are embedded as they are.
 4. Videos (`mp4`, `3gp`, `mov`, `webm`, `mkv`, `avi`) get one still frame extracted with
    ffmpeg (bundled through `imageio-ffmpeg`) and that frame is placed in the PDF.
