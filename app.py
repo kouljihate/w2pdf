@@ -142,7 +142,6 @@ with st.sidebar:
         horizontal=True,
     )
     margin_mm = st.slider(t("margins"), 8, 30, 15, 1)
-    images_per_page = st.radio(t("images_per_page"), [1, 2], horizontal=True)
 
     st.divider()
     st.header(t("pdf_language"))
@@ -161,7 +160,8 @@ with st.sidebar:
 
     st.divider()
     st.header(t("extras"))
-    show_metadata = st.checkbox(t("show_metadata"), value=True)
+    # Off by default: generated documents carry the messages without sender/date lines.
+    show_metadata = st.checkbox(t("show_metadata"), value=False)
     page_numbers = st.checkbox(t("page_numbers"), value=True)
     save_copies = st.checkbox(
         t("save_copy"),
@@ -534,7 +534,6 @@ if build_clicked:
                 landscape=orientation == "Landscape",
                 margin_mm=margin_mm,
                 title=title,
-                images_per_page=images_per_page,
                 translation_mode=translation_mode,
                 target_language=target_language,
                 show_metadata=show_metadata,

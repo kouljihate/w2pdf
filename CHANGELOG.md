@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.14.0 — 2026-11-16
+
+- Flow photos and texts continuously and ship the VIP Rawy fonts for Community Cloud
+
 ## 1.13.1 — 2026-11-16
 
 - Show the version in a centred badge in the sidebar footer

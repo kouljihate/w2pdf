@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.13.1-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.14.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -20,8 +20,12 @@ PDF, with an Arabic → English/French translation module.
   Change a number to reorder; the resulting order is previewed before building.
 - **Translation**: every selected block containing Arabic is translated, and the PDF
   carries the Arabic message together with its translation on the same page.
-- **PDF options**: title, page size (A4/Letter/Legal), portrait or landscape,
-  margins, sender/date labels and page numbers.
+- **PDF options**: title, page size (A4/Letter/Legal), portrait or landscape, margins
+  and page numbers. Sender/date lines are off by default (tick “Show sender and date”
+  to add them).
+- **Continuous layout**: photos and texts follow each other on the page — a photo, then
+  its text, then the next photo — and a new page starts only when the remaining space
+  cannot hold the picture. There is no photos-per-page setting.
 - **Download or keep**: the finished PDF is always offered as **Download PDF locally**,
   and a copy is written to `output/` (`/app/output` in the container, mounted to
   `./output` by Compose) unless you untick "Save a copy to the output folder". Earlier
@@ -138,10 +142,24 @@ strings live in `w2pdf/i18n.py`; the PDF modes are declared in `app.py`.
 - Fonts are loaded from `static/fonts` through Streamlit's static serving
   (`server.enableStaticServing`, URL prefix `/app/static/`), so nothing is fetched online.
 - Comfortaa ships in this repo under the SIL Open Font License
-  (`static/fonts/OFL-Comfortaa.txt`). **VIP Rawy has no published license, so its
-  binaries are not redistributed here** — copy `VIP-Rawy-Regular.ttf` and
-  `VIP-Rawy-Bold.ttf` into `static/fonts/` for local builds (Arabic then falls back to
-  Amiri/Noto when they are absent).
+  (`static/fonts/OFL-Comfortaa.txt`). **VIP Rawy has no published license**; its two TTFs
+  are committed anyway because Streamlit Community Cloud only serves files that are in
+  the repository — without them the published app and its PDFs fall back to a system
+  Arabic face. Remove `static/fonts/VIP-Rawy-*.ttf` if you cannot redistribute them.
+
+## Publishing on Streamlit Community Cloud
+
+Community Cloud runs `app.py` from the repository root and serves `./static` at
+`/app/static` only because `server.enableStaticServing = true` is set in
+`.streamlit/config.toml`. For the theme and the duo fonts to work there:
+
+- `static/` must be committed (the Bootswatch sheet, the CSS layers and every TTF);
+- `*.ttf` files must not be git-ignored — that is why the VIP Rawy binaries live in the
+  repository;
+- keep `.streamlit/config.toml` in the repository so static serving stays enabled.
+
+The app degrades gracefully when a font is missing: the PDF falls back to Amiri/Noto and
+finally to Helvetica, instead of failing.
 
 ## Versioning
 

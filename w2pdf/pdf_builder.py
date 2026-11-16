@@ -80,7 +80,6 @@ class PdfOptions:
     landscape: bool = False
     margin_mm: float = 15.0
     title: str = ""
-    images_per_page: int = 1
     translation_mode: str = "none"
     target_language: str = "fr"
     show_metadata: bool = True
@@ -423,6 +422,9 @@ class _Document:
 
 # How much of the free page height a photo may use when its texts follow it.
 PHOTO_SHARE_WITH_TEXT = 0.62
+# Below this much free space a photo is moved to the next page instead of being
+# squeezed into a sliver.
+MIN_PHOTO_HEIGHT = 110
 
 
 def order_blocks(blocks: Sequence[ImageBlock | TextBlock]) -> list[ImageBlock | TextBlock]:
@@ -457,39 +459,25 @@ def build_pdf(
     doc = _Document(buffer, options, arabic_font)
     doc.title_block(options.title)
 
-    per_page = 2 if options.images_per_page == 2 else 1
+    # Continuous flow: a photo follows the previous block on the same page, its text
+    # follows the photo, and the next photo follows that — a new page only starts when
+    # the remaining space cannot hold the picture.
     gap = 10
-    index = 0
-    while index < len(ordered):
-        item = ordered[index]
+    for index, item in enumerate(ordered):
         if isinstance(item, TextBlock):
             doc.add_message(item, options.translation_mode, options.show_metadata)
-            index += 1
             continue
 
-        # Consecutive photos (nothing between them) share a gallery page.
-        run: list[ImageBlock] = [item]
-        cursor = index + 1
-        while per_page > 1 and cursor < len(ordered) and len(run) < per_page:
-            following = ordered[cursor]
-            if not isinstance(following, ImageBlock):
-                break
-            run.append(following)
-            cursor += 1
-
-        doc.force_new_page()
-        if len(run) > 1:
-            slot = (doc.free_height - gap * (len(run) - 1)) / len(run)
-            for block in run:
-                doc.add_image(block, slot)
-                doc.advance(gap)
-            index = cursor
-            continue
-
-        followed_by_text = cursor < len(ordered) and isinstance(ordered[cursor], TextBlock)
-        slot = doc.free_height * PHOTO_SHARE_WITH_TEXT if followed_by_text else doc.free_height
+        followed_by_text = index + 1 < len(ordered) and isinstance(
+            ordered[index + 1], TextBlock
+        )
+        share = PHOTO_SHARE_WITH_TEXT if followed_by_text else 1.0
+        slot = doc.free_height * share
+        if slot < MIN_PHOTO_HEIGHT:
+            doc.force_new_page()
+            slot = doc.free_height * share
         doc.add_image(item, slot)
-        index += 1
+        doc.advance(gap)
 
     doc.close()
     return buffer.getvalue()
