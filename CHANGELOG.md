@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.7.1 — 2026-11-16
+
+- Show the export's own d/m/yy dates in the item table so none get clipped
+
 ## 1.7.0 — 2026-11-16
 
 - Process the export like WhatsApp does: translate text, embed photos, grab a video frame, skip Facebook links

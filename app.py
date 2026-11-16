@@ -256,7 +256,7 @@ else:
                         help="Document position, assigned in chat order so each photo keeps its message.",
                     ),
                     "type": st.column_config.TextColumn("Type", disabled=True, width="small"),
-                    "date": st.column_config.TextColumn("Date", disabled=True, width="small"),
+                    "date": st.column_config.TextColumn("Date", disabled=True, width="medium"),
                     "sender": st.column_config.TextColumn("Sender", disabled=True, width="small"),
                     "content": st.column_config.TextColumn("Content", disabled=True, width="large"),
                 },

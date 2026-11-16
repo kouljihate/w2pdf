@@ -67,9 +67,17 @@ class ChatMessage:
 
     @property
     def time_label(self) -> str:
+        """Full date for the PDF header."""
         if self.timestamp is None:
             return ""
         return self.timestamp.strftime("%d/%m/%Y %H:%M")
+
+    @property
+    def short_label(self) -> str:
+        """Compact date for the item table, matching the export's `d/m/yy, HH:MM`."""
+        if self.timestamp is None:
+            return ""
+        return self.timestamp.strftime("%d/%m/%y %H:%M")
 
 
 def decode_export(data: bytes) -> str:
@@ -184,7 +192,7 @@ def chat_items(
                     "seq": sequence,
                     "type": "Photo",
                     "sender": message.sender,
-                    "date": message.time_label,
+                    "date": message.short_label,
                     "content": content,
                     "media": reference,
                     "caption": caption,
@@ -204,7 +212,7 @@ def chat_items(
                     "seq": sequence,
                     "type": "Video",
                     "sender": message.sender,
-                    "date": message.time_label,
+                    "date": message.short_label,
                     "content": content,
                     "media": reference,
                     "caption": caption,
@@ -223,7 +231,7 @@ def chat_items(
                 "seq": sequence,
                 "type": "Text",
                 "sender": message.sender,
-                "date": message.time_label,
+                "date": message.short_label,
                 "content": " ".join(text.split())[:120],
                 "media": "",
                 "caption": "",
