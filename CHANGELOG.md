@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.11.0 — 2026-11-16
+
+- Theme the app with Bootswatch Cyborg and add a duo-language switch
+
 ## 1.10.3 — 2026-11-16
 
 - Print numbers with Latin digits and keep dates unflipped in Arabic messages

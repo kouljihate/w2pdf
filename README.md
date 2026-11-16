@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.10.3-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.11.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -91,14 +91,20 @@ Arabic text rather than printing empty boxes.
 
 ## Theming and fonts
 
-- `static/theme/bootstrap-w2pdf.css` is a **free Bootstrap 5 design layer**: Bootstrap's
-  colour, radius, spacing, shadow and component tokens (buttons, inputs, alerts,
-  expanders, tables, uploader) applied to Streamlit's markup. Bootstrap's reset is
-  deliberately not loaded — it would fight Streamlit's own layout.
+- `static/theme/bootstrap-w2pdf.css` is a **free Bootstrap 5 design layer** carrying the
+  **Bootswatch Cyborg** dark palette: Bootstrap's colour, radius, spacing, shadow and
+  component tokens (buttons, inputs, alerts, expanders, tables, uploader) applied to
+  Streamlit's markup. Bootstrap's reset is deliberately not loaded — it would fight
+  Streamlit's own layout. `.streamlit/config.toml` mirrors the same colours so the
+  widgets Streamlit draws itself match the layer.
 - `static/css/app.css` holds app-specific pieces (hero, version badge).
 - Typography is duo-language: **Comfortaa** (Light/Regular/Bold) for Latin and French,
   **VIP Rawy** (Regular/Bold) for Arabic. The CSS font stack falls back per glyph, and
   the PDF registers both faces with ReportLab (Amiri/Noto remain system fallbacks).
+- The sidebar's **Language** switch alternates between Duo (العربية + Français), French
+  only and Arabic only. It sets what the PDF prints *and* swaps
+  `--bs-body-font-family` between the Comfortaa and VIP Rawy stacks, so the interface
+  follows the same pairing.
 - Fonts are loaded from `static/fonts` through Streamlit's static serving
   (`server.enableStaticServing`, URL prefix `/app/static/`), so nothing is fetched online.
 - Comfortaa ships in this repo under the SIL Open Font License

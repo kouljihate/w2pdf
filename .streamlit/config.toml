@@ -9,9 +9,10 @@ enableStaticServing = true
 [browser]
 gatherUsageStats = false
 
+# Bootswatch "Cyborg" (dark); the fonts come from static/theme/bootstrap-w2pdf.css.
 [theme]
-base = "light"
-primaryColor = "#128C7E"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F3F6F5"
-textColor = "#111827"
+base = "dark"
+primaryColor = "#2A9FD6"
+backgroundColor = "#060606"
+secondaryBackgroundColor = "#111214"
+textColor = "#adafae"

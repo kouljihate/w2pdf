@@ -18,7 +18,6 @@ import streamlit as st
 from w2pdf import __version__, fonts
 from w2pdf.archive import ArchiveError, load_chat_archive
 from w2pdf.pdf_builder import (
-    TRANSLATION_MODE_LABELS,
     ImageBlock,
     PdfExportError,
     PdfOptions,
@@ -38,6 +37,19 @@ st.set_page_config(
 )
 
 STYLE_FILES = ("static/theme/bootstrap-w2pdf.css", "static/css/app.css")
+
+# The language switch decides both what the PDF prints and which typeface the app uses:
+# Comfortaa covers English and French, VIP Rawy covers Arabic, and Duo pairs them per glyph.
+LANGUAGE_MODES = {
+    "Duo — العربية + Français": "both",
+    "Français": "translated",
+    "العربية": "none",
+}
+LANGUAGE_FONT_STACKS = {
+    "Duo — العربية + Français": '"Comfortaa", "VIP Rawy", "Segoe UI", system-ui, sans-serif',
+    "Français": '"Comfortaa", "Segoe UI", system-ui, sans-serif',
+    "العربية": '"VIP Rawy", "Comfortaa", "Segoe UI", sans-serif',
+}
 
 
 @st.cache_data(show_spinner=False)
@@ -113,24 +125,22 @@ with st.sidebar:
     images_per_page = st.radio("Images per page", [1, 2], horizontal=True)
 
     st.divider()
-    st.header("Translation")
-    translate_on = st.toggle(
-        "Arabic → French",
-        value=True,
-        help="Every selected message containing Arabic is translated and added to the PDF.",
+    st.header("Language")
+    language = st.radio(
+        "Switch language",
+        list(LANGUAGE_MODES),
+        index=0,
+        help=(
+            "Duo prints every message in Arabic and in French; Français translates the "
+            "Arabic and prints the French; العربية keeps the messages as written. The same "
+            "choice sets the typeface: Comfortaa for English/French, VIP Rawy for Arabic."
+        ),
     )
-    mode_label = st.selectbox(
-        "Text in the PDF",
-        list(TRANSLATION_MODE_LABELS.values()),
-        index=1,
-        disabled=not translate_on,
+    translation_mode = LANGUAGE_MODES[language]
+    translate_on = translation_mode != "none"
+    st.caption(
+        "Arabic → French: MyMemory first, Google as fallback — no API key, needs internet."
     )
-    translation_mode = "none"
-    if translate_on:
-        translation_mode = next(
-            key for key, label in TRANSLATION_MODE_LABELS.items() if label == mode_label
-        )
-    st.caption("Free translation via MyMemory, Google as fallback — no API key, needs internet.")
 
     st.divider()
     st.header("Extras")
@@ -150,6 +160,12 @@ with st.sidebar:
 
     st.divider()
     st.caption(f"W2PDF v{__version__}")
+
+# Apply the pairing chosen above: every rule in the theme reads this variable.
+st.markdown(
+    f"<style>:root {{ --bs-body-font-family: {LANGUAGE_FONT_STACKS[language]}; }}</style>",
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------------------------------
 # 1 — the WhatsApp export
