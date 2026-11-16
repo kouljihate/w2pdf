@@ -305,6 +305,35 @@ else:
                         )
                     )
 
+            media_rows = [row for row in rows if row["type"] in {"Photo", "Video", "Audio"}]
+            if media_rows:
+                with st.expander(
+                    f"Preview media · {len(media_rows)} item(s)", expanded=False
+                ):
+                    st.caption(
+                        "Click an item to open the photo, play the video or listen to the "
+                        "voice note exactly as it was sent."
+                    )
+                    media_columns = st.columns(3)
+                    for index, row in enumerate(media_rows):
+                        label = " ".join(row["content"].split())[:40] or row["media"]
+                        with media_columns[index % 3]:
+                            with st.popover(label, width="stretch"):
+                                if row["type"] == "Photo":
+                                    st.image(row["data"], caption=row["media"])
+                                elif row["type"] == "Video":
+                                    video_payload = archive.video_for(row["media"])
+                                    if video_payload:
+                                        st.video(video_payload)
+                                    else:
+                                        st.caption("This video is not inside the archive.")
+                                else:
+                                    audio_payload = archive.audio_for(row["media"])
+                                    if audio_payload:
+                                        st.audio(audio_payload)
+                                    else:
+                                        st.caption("This voice note is not inside the archive.")
+
             photos = sum(
                 1
                 for block in export_blocks

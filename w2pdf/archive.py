@@ -24,6 +24,9 @@ MAX_IMAGE_BYTES = 30 * 1024 * 1024
 # Videos are held only until their frame is extracted at build time.
 MAX_VIDEO_FILE_BYTES = 60 * 1024 * 1024
 MAX_VIDEO_TOTAL_BYTES = 200 * 1024 * 1024
+# Voice notes stay in memory so they can be played in the preview list.
+MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024
+MAX_AUDIO_TOTAL_BYTES = 100 * 1024 * 1024
 
 
 class ArchiveError(RuntimeError):
@@ -37,8 +40,8 @@ class ChatExport:
     messages: list[ChatMessage] = field(default_factory=list)
     images: dict[str, bytes] = field(default_factory=dict)
     videos: dict[str, bytes] = field(default_factory=dict)
-    # Audio is named only: a PDF cannot carry a sound file, so the bytes are skipped.
-    audios: set[str] = field(default_factory=set)
+    # Audio never enters the PDF, but it is kept so the preview can play it.
+    audios: dict[str, bytes] = field(default_factory=dict)
     chat_name: str = ""
 
     def image_for(self, reference: str | None) -> bytes | None:
@@ -55,11 +58,12 @@ class ChatExport:
         key = os.path.basename(reference.replace("\\", "/")).lower()
         return self.videos.get(key)
 
-    def has_audio(self, reference: str | None) -> bool:
-        """True when the reference names a voice note or other audio in the archive."""
+    def audio_for(self, reference: str | None) -> bytes | None:
+        """Return the audio bytes referenced by a chat line, if the archive has it."""
         if not reference:
-            return False
-        return os.path.basename(reference.replace("\\", "/")).lower() in self.audios
+            return None
+        key = os.path.basename(reference.replace("\\", "/")).lower()
+        return self.audios.get(key)
 
 
 def _is_unsafe(name: str) -> bool:
@@ -150,9 +154,19 @@ def load_chat_archive(data: bytes) -> ChatExport:
             base = os.path.basename(name.replace("\\", "/"))
             videos.setdefault(base.lower(), payload)
 
-    audios = {
-        os.path.basename(name.replace("\\", "/")).lower() for name in audio_names
-    }
+        audios: dict[str, bytes] = {}
+        audio_total = 0
+        for name in audio_names:
+            info = archive.getinfo(name)
+            audio_total += info.file_size
+            if info.file_size > MAX_AUDIO_FILE_BYTES or audio_total > MAX_AUDIO_TOTAL_BYTES:
+                continue
+            try:
+                payload = archive.read(name)
+            except Exception:
+                continue
+            base = os.path.basename(name.replace("\\", "/"))
+            audios.setdefault(base.lower(), payload)
 
     messages = parse_chat(decode_export(raw))
     chat_name = os.path.splitext(os.path.basename(chat_log.replace("\\", "/")))[0]

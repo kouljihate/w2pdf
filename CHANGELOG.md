@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.9.0 — 2026-11-16
+
+- Open photos, videos and voice notes from the item list
+
 ## 1.8.0 — 2026-11-16
 
 - List Opus voice notes as audio instead of generic attachments
