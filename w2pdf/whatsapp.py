@@ -12,8 +12,8 @@ from datetime import datetime
 #   15/11/2026, 08:35 - Alice: مرحبا
 _LINE_RE = re.compile(
     r"^\[?"
-    r"(?P<date>\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}),?\s+"
-    r"(?P<time>\d{1,2}:\d{2}(?::\d{2})?(?:\s*[APap]\.?[Mm]\.?)?)"
+    r"(?P<date>\d{1,4}[/.\-]\d{1,2}[/.\-]\d{1,4})[,\u060c\u066c]?\s+"
+    r"(?P<time>\d{1,2}:\d{2}(?::\d{2})?(?:\s*[APap\u0635\u0645]\.?[Mm]?\.?)?)"
     r"\]?\s*(?:[-–—]\s*)?"
     r"(?P<sender>[^:\n]{1,80}?):\s?"
     r"(?P<body>.*)$"
@@ -90,9 +90,31 @@ def decode_export(data: bytes) -> str:
     return data.decode("utf-8", errors="replace")
 
 
+# Phones set to Arabic write timestamps with Arabic-Indic (٣) or Persian (۳) digits and
+# may use a narrow no-break space before AM/PM. `strptime` accepts none of that, so the
+# line matched while its date came back empty. Only timestamps are translated: the
+# message text keeps the digits the sender actually typed.
+_DIGIT_FIXES = str.maketrans(
+    {
+        **{arabic: latin for arabic, latin in zip("٠١٢٣٤٥٦٧٨٩", "0123456789")},
+        **{persian: latin for persian, latin in zip("۰۱۲۳۴۵۶۷۸۹", "0123456789")},
+        "\u060c": ",",
+        "\u066c": ",",
+        "\u066b": ".",
+        "\u202f": " ",
+        "\u00a0": " ",
+    }
+)
+
+# Invisible marks WhatsApp wraps around lines; they are never part of the content.
+_MARK_FIXES = str.maketrans(
+    {mark: None for mark in "\u200e\u200f\u202a\u202b\u202c\u202d\u202e\ufeff"}
+)
+
+
 def _clean(line: str) -> str:
-    # WhatsApp wraps lines with LTR/RTL marks for display.
-    return line.replace("\u200e", "").replace("\u200f", "").replace("\ufeff", "")
+    """Drop the invisible marks WhatsApp leaves in a line."""
+    return line.translate(_MARK_FIXES)
 
 
 def _is_system(text: str) -> bool:
@@ -112,6 +134,9 @@ def _extract_attachment(body: str) -> tuple[str | None, str]:
 
 
 def _parse_timestamp(date: str, time: str) -> datetime | None:
+    date = date.translate(_DIGIT_FIXES)
+    # Arabic locales mark the meridiem as ص (AM) or م (PM).
+    time = time.translate(_DIGIT_FIXES).replace("ص", "AM").replace("م", "PM")
     stamp = f"{date} {time}".replace(".", "/").replace("-", "/")
     stamp = re.sub(r"\s*([APap])\.?[Mm]\.?$", r" \1M", stamp)
     stamp = stamp.replace("a.m.", "AM").replace("p.m.", "PM")
@@ -125,7 +150,41 @@ def _parse_timestamp(date: str, time: str) -> datetime | None:
             return datetime.strptime(stamp, fmt)
         except ValueError:
             continue
-    return None
+    return _parse_by_parts(date, time)
+
+
+def _parse_by_parts(date: str, time: str) -> datetime | None:
+    """Read a timestamp field by field, so a matched line never loses its date."""
+    pieces = [piece.strip() for piece in re.split(r"[/.\-]", date) if piece.strip()]
+    if len(pieces) != 3 or not all(piece.isdigit() for piece in pieces):
+        return None
+    numbers = [int(piece) for piece in pieces]
+    if numbers[0] > 31:  # year first: 2026/11/05
+        year, month, day = numbers
+    else:  # day first: 5/11/26
+        day, month, year = numbers
+    if year < 100:
+        year += 2000
+
+    clock = re.match(
+        r"^\s*(?P<hour>\d{1,2}):(?P<minute>\d{2})(?::(?P<second>\d{2}))?"
+        r"\s*(?P<meridiem>[APap])?\.?[Mm]?\.?\s*$",
+        time,
+    )
+    if not clock:
+        return None
+    hour = int(clock.group("hour"))
+    minute = int(clock.group("minute"))
+    second = int(clock.group("second") or 0)
+    meridiem = (clock.group("meridiem") or "").upper()
+    if meridiem == "P" and hour < 12:
+        hour += 12
+    elif meridiem == "A" and hour == 12:
+        hour = 0
+    try:
+        return datetime(year, month, day, hour, minute, second)
+    except ValueError:
+        return None
 
 
 def parse_chat(raw: str) -> list[ChatMessage]:
