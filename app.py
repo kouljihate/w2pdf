@@ -223,6 +223,16 @@ else:
                 f"{len(archive.audios)} audio file(s) in the archive"
             )
 
+        if archive.stored_files > 0:
+            st.caption(
+                f"{archive.stored_files} file(s) copied to `{archive.files_dir}` "
+                "(the folder was emptied first)."
+            )
+        elif archive.stored_files == 0:
+            st.caption(f"Files already up to date in `{archive.files_dir}`.")
+        else:
+            st.warning("Could not write the attachment files to the files folder.")
+
         rows = chat_items(selected_messages, archive.images, archive.videos, archive.audios)
         if not rows:
             st.warning("No messages in the selected range.")

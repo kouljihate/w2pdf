@@ -2,6 +2,10 @@
 
 All notable changes to W2PDF. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.10.0 — 2026-11-16
+
+- Copy every attachment from the uploaded .zip into a files folder, cleared on each upload
+
 ## 1.9.0 — 2026-11-16
 
 - Open photos, videos and voice notes from the item list

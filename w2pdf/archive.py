@@ -7,12 +7,80 @@ disk, no path traversal outside the archive.
 
 from __future__ import annotations
 
+import hashlib
 import io
 import os
+import shutil
 import zipfile
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from .whatsapp import ChatMessage, decode_export, parse_chat
+
+FILES_DIR_ENV = "W2PDF_FILES_DIR"
+FILES_MARKER = ".w2pdf-archive"
+
+
+def files_directory() -> Path:
+    """Folder the archive's attachments are copied into."""
+    return Path(os.environ.get(FILES_DIR_ENV, "files"))
+
+
+def _clear_directory(directory: Path) -> None:
+    """Empty a folder without touching anything outside it."""
+    for entry in directory.iterdir():
+        try:
+            if entry.is_symlink() or not entry.is_dir():
+                entry.unlink()
+            else:
+                shutil.rmtree(entry)
+        except OSError:
+            continue
+
+
+def store_media_files(
+    archive: zipfile.ZipFile,
+    infos: list[zipfile.ZipInfo],
+    marker: str,
+    directory: Path,
+) -> int:
+    """Copy every non-.txt member into `directory`, clearing it first.
+
+    The folder is emptied before a different archive is written, so leftovers from
+    a previous export never mix with the current one. Re-reading the same archive
+    is a no-op, which keeps Streamlit reruns cheap.
+    """
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return -1
+
+    marker_path = directory / FILES_MARKER
+    try:
+        if marker_path.read_text(encoding="utf-8").strip() == marker:
+            return 0
+    except OSError:
+        pass
+
+    _clear_directory(directory)
+    written = 0
+    for info in infos:
+        if _is_unsafe(info.filename):
+            continue
+        name = os.path.basename(info.filename.replace("\\", "/"))
+        if not name or name.lower().endswith(".txt"):
+            continue
+        try:
+            (directory / name).write_bytes(archive.read(info.filename))
+        except (OSError, zipfile.BadZipFile, RuntimeError):
+            continue
+        written += 1
+
+    try:
+        marker_path.write_text(marker + "\n", encoding="utf-8")
+    except OSError:
+        pass
+    return written
 
 IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"})
 VIDEO_EXTENSIONS = frozenset({".mp4", ".3gp", ".mov", ".webm", ".mkv", ".avi", ".m4v"})
@@ -43,6 +111,8 @@ class ChatExport:
     # Audio never enters the PDF, but it is kept so the preview can play it.
     audios: dict[str, bytes] = field(default_factory=dict)
     chat_name: str = ""
+    files_dir: str = ""
+    stored_files: int = 0
 
     def image_for(self, reference: str | None) -> bytes | None:
         """Return the image bytes referenced by a chat line, if the archive has it."""
@@ -117,6 +187,10 @@ def load_chat_archive(data: bytes) -> ChatExport:
             elif extension in AUDIO_EXTENSIONS:
                 audio_names.append(info.filename)
 
+        stored_files = store_media_files(
+            archive, infos, hashlib.sha1(data).hexdigest(), files_directory()
+        )
+
         if not text_names:
             raise ArchiveError(
                 "No chat log (_chat.txt) found in the archive. Is this a WhatsApp "
@@ -176,4 +250,6 @@ def load_chat_archive(data: bytes) -> ChatExport:
         videos=videos,
         audios=audios,
         chat_name=chat_name,
+        files_dir=str(files_directory()),
+        stored_files=stored_files,
     )

@@ -1,6 +1,6 @@
 # W2PDF — WhatsApp images & texts to PDF
 
-[![version](https://img.shields.io/badge/version-1.9.0-128C7E?style=flat-square)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.10.0-128C7E?style=flat-square)](CHANGELOG.md)
 [![changelog](https://img.shields.io/badge/changelog-view-6B7280?style=flat-square)](CHANGELOG.md)
 
 <https://github.com/kouljihate/w2pdf>
@@ -45,6 +45,10 @@ When a `.zip` is loaded the app follows this order:
    line in its place, keeping the caption when the note had one.
 6. Facebook links (`facebook.com`, `fb.watch`, `fb.me`) are ignored — a message that is
    only a link is dropped, and a link inside longer text is stripped out.
+
+Every attachment in the uploaded `.zip` — everything except the chat `.txt` — is also
+copied into the `files/` folder (mounted at `./files`), which is emptied before each new
+upload so it always matches the export you just loaded.
 
 Above the list, **Preview media** gathers every photo, video and voice note from the
 export: click one to see the photo, play the video, or listen to the voice note before
